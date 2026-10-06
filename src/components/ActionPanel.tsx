@@ -32,7 +32,7 @@ function PhaseStepper() {
             {i === idx && <motion.div layoutId="phase-pill" className="absolute inset-0 rounded-md" style={{ background: color, boxShadow: `0 0 14px ${color}` }} />}
             <span className="relative">{s.label.toUpperCase()}</span>
           </div>
-          {i < STEPS.length - 1 && <div className="h-px w-3 bg-white/20 sm:w-5" />}
+          {i < STEPS.length - 1 && <div className="h-px w-3 bg-fg/20 sm:w-5" />}
         </div>
       ))}
     </div>
@@ -60,12 +60,12 @@ function ReinforceControls() {
         <div className="leading-tight">
           <div className="text-sm font-bold">armées à placer</div>
           {phase === 'reinforce' && breakdown && (
-            <div className="text-[11px] text-white/55">
+            <div className="text-[11px] text-fg/55">
               {breakdown.base} de base
               {breakdown.continents.map((c) => ` · ${CONTINENTS[c.id].name} +${c.bonus}`)}
             </div>
           )}
-          {phase === 'deploy' && <div className="text-[11px] text-white/55">Touchez vos territoires</div>}
+          {phase === 'deploy' && <div className="text-[11px] text-fg/55">Touchez vos territoires</div>}
         </div>
       </div>
       <div className="flex items-center gap-1.5">
@@ -104,22 +104,22 @@ function AttackControls() {
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="min-w-0 flex-1 text-sm">
         {!selected && (
-          <span className="flex items-center gap-2 text-white/80">
+          <span className="flex items-center gap-2 text-fg/80">
             <Crosshair size={16} style={{ color: me.color }} /> Choisissez un territoire d’attaque ou une cible
           </span>
         )}
         {selected && !target && (
-          <span className="text-white/80">
+          <span className="text-fg/80">
             Depuis <b style={{ color: me.color }}>{TERRITORY_BY_ID[selected].name}</b> — choisissez une cible
           </span>
         )}
         {selected && target && (
           <div className="flex items-center gap-2 truncate font-bold">
             <span style={{ color: me.color }}>{TERRITORY_BY_ID[selected].name}</span>
-            <span className="text-white/50">({board[selected].armies})</span>
+            <span className="text-fg/50">({board[selected].armies})</span>
             <Swords size={15} className="shrink-0 text-red-400" />
             <span>{TERRITORY_BY_ID[target].name}</span>
-            <span className="text-white/50">({board[target].armies})</span>
+            <span className="text-fg/50">({board[target].armies})</span>
           </div>
         )}
       </div>
@@ -151,7 +151,7 @@ function FortifyControls() {
   const me = useGame((s) => s.players[s.current])
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <div className="text-sm text-white/80">
+      <div className="text-sm text-fg/80">
         {selected ? (
           <>
             Déplacer depuis <b style={{ color: me.color }}>{TERRITORY_BY_ID[selected].name}</b> vers un territoire relié
@@ -192,7 +192,7 @@ export function ActionPanel() {
           <AnimatePresence mode="wait">
             <motion.div key={me.ai ? 'ai' : phase} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }}>
               {me.ai ? (
-                <div className="flex items-center gap-3 py-1 text-sm text-white/80">
+                <div className="flex items-center gap-3 py-1 text-sm text-fg/80">
                   <div className="flex gap-1">
                     {[0, 1, 2].map((i) => (
                       <motion.div

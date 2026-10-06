@@ -82,7 +82,7 @@ export function CardsPanel() {
   return (
     <AnimatePresence>
       {open && !me.ai && (
-        <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)}>
+        <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-[var(--scrim)] p-2 backdrop-blur-sm sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)}>
           <motion.div
             className="glass flex max-h-[92dvh] w-full max-w-3xl flex-col rounded-3xl p-4 sm:p-6"
             initial={{ y: 80, scale: 0.95 }}
@@ -98,16 +98,16 @@ export function CardsPanel() {
                 </button>
               )}
             </div>
-            <p className="mb-4 text-sm text-white/60">
+            <p className="mb-4 text-sm text-fg/60">
               {mustTrade ? (
-                <span className="font-bold text-yellow-300">Vous avez {cards.length} cartes : échange obligatoire !</span>
+                <span className="font-bold text-amber-600 dark:text-yellow-300">Vous avez {cards.length} cartes : échange obligatoire !</span>
               ) : (
                 'Échangez 3 cartes identiques, 3 différentes, ou avec un joker.'
               )}{' '}
-              Prochain échange : <b className="text-white">+{tradeValue(trades)} armées</b>
+              Prochain échange : <b className="text-fg">+{tradeValue(trades)} armées</b>
             </p>
             <div className="no-scrollbar -mx-4 flex min-h-48 flex-wrap content-start justify-center gap-3 overflow-y-auto px-4 pb-4 pt-6 sm:-mx-6 sm:px-6">
-              {cards.length === 0 && <div className="w-full text-center text-white/40">Conquérez un territoire pendant votre tour pour gagner une carte.</div>}
+              {cards.length === 0 && <div className="w-full text-center text-fg/40">Conquérez un territoire pendant votre tour pour gagner une carte.</div>}
               {cards.map((c, i) => (
                 <motion.div key={c.id} initial={{ opacity: 0, y: 30, scale: 0.85 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: i * 0.06 }}>
                   <GameCard
@@ -122,7 +122,7 @@ export function CardsPanel() {
             <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0 flex-1 text-sm">
                 {sel.length < 3 ? (
-                  <span className="text-white/50">
+                  <span className="text-fg/50">
                     {sel.length}/3 sélectionnées{cards.length >= 3 && !best && ' · aucune combinaison possible'}
                   </span>
                 ) : valid ? (
@@ -176,7 +176,7 @@ export function NewCardToast() {
           exit={{ y: -60, opacity: 0, scale: 0.6 }}
           transition={{ type: 'spring', stiffness: 220, damping: 18 }}
         >
-          <div className="font-display text-xs font-black tracking-widest text-yellow-300 text-glow">NOUVELLE CARTE</div>
+          <div className="font-display text-xs font-black tracking-widest text-amber-500 dark:text-yellow-300 text-glow">NOUVELLE CARTE</div>
           <GameCard card={last.card} small />
         </motion.div>
       )}

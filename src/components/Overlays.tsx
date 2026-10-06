@@ -29,7 +29,7 @@ export function MoveDialog() {
   return (
     <AnimatePresence>
       {show && pm && (
-        <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-gradient-to-t from-black/60 via-black/10 to-transparent p-2 pb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-gradient-to-t from-[var(--scrim)] via-transparent to-transparent p-2 pb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           <motion.div
             className="glass w-full max-w-md rounded-3xl p-5"
             style={{ borderColor: `${me.color}88`, boxShadow: `0 0 40px ${me.color}44` }}
@@ -43,14 +43,14 @@ export function MoveDialog() {
             </div>
             <div className="mb-5 flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1 text-center">
-                <div className="truncate text-sm text-white/70">{TERRITORY_BY_ID[pm.from].name}</div>
+                <div className="truncate text-sm text-fg/70">{TERRITORY_BY_ID[pm.from].name}</div>
                 <div className="font-display text-3xl font-black">{board[pm.from].armies - n}</div>
               </div>
               <motion.div animate={{ x: [0, 6, 0] }} transition={{ repeat: Infinity, duration: 1 }}>
                 <ArrowRight style={{ color: me.color }} />
               </motion.div>
               <div className="min-w-0 flex-1 text-center">
-                <div className="truncate text-sm text-white/70">{TERRITORY_BY_ID[pm.to].name}</div>
+                <div className="truncate text-sm text-fg/70">{TERRITORY_BY_ID[pm.to].name}</div>
                 <div className="font-display text-3xl font-black" style={{ color: me.color, textShadow: `0 0 14px ${me.color}` }}>
                   {board[pm.to].armies + n}
                 </div>
@@ -153,7 +153,7 @@ export function LogTicker() {
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 0.35 + (i / items.length) * 0.65, x: 0 }}
             exit={{ opacity: 0, height: 0 }}
-            className={`truncate rounded-lg bg-black/45 px-2 py-0.5 text-[11px] font-semibold backdrop-blur-sm sm:text-xs ${i < items.length - 2 ? 'hidden sm:block' : ''}`}
+            className={`truncate rounded-lg bg-surface px-2 py-0.5 text-[11px] font-semibold backdrop-blur-sm sm:text-xs ${i < items.length - 2 ? 'hidden sm:block' : ''}`}
             style={{ borderLeft: `3px solid ${e.color ?? '#22d3ee'}` }}
           >
             {e.text}
@@ -192,7 +192,7 @@ export function VictoryScreen() {
   if (winner === null) return null
   const w = players[winner]
   return (
-    <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+    <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--scrim)] p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
       <motion.div
         className="glass relative w-full max-w-lg overflow-hidden rounded-3xl p-6 text-center"
         style={{ borderColor: w.color, boxShadow: `0 0 80px ${w.color}66` }}
@@ -213,12 +213,12 @@ export function VictoryScreen() {
           VICTOIRE
         </div>
         <div className="relative mt-2 text-lg font-bold">
-          <Crown size={16} className="mr-1 inline text-yellow-300" />
+          <Crown size={16} className="mr-1 inline text-amber-500 dark:text-yellow-300" />
           {w.name} — domination mondiale en {turn} tours !
         </div>
-        <div className="relative mt-5 overflow-hidden rounded-xl border border-white/10">
+        <div className="relative mt-5 overflow-hidden rounded-xl border border-fg/10">
           <table className="w-full text-sm">
-            <thead className="bg-white/5 font-display text-[10px] tracking-widest text-white/50">
+            <thead className="bg-fg/5 font-display text-[10px] tracking-widest text-fg/50">
               <tr>
                 <th className="p-2 text-left">GÉNÉRAL</th>
                 <th className="p-2">CONQUÊTES</th>
@@ -227,7 +227,7 @@ export function VictoryScreen() {
             </thead>
             <tbody>
               {players.map((p, i) => (
-                <tr key={p.id} className="border-t border-white/5">
+                <tr key={p.id} className="border-t border-fg/5">
                   <td className="p-2 text-left font-bold" style={{ color: p.color }}>
                     {p.name}
                   </td>
@@ -259,10 +259,10 @@ export function PauseMenu({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--scrim)] p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
           <motion.div className="glass w-full max-w-sm rounded-3xl p-6" initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={(e) => e.stopPropagation()}>
             <h2 className="mb-1 text-center font-display text-xl font-black tracking-[0.3em] text-neon text-glow">PAUSE</h2>
-            <p className="mb-5 text-center text-sm text-white/50">La partie est sauvegardée automatiquement.</p>
+            <p className="mb-5 text-center text-sm text-fg/50">La partie est sauvegardée automatiquement.</p>
             <div className="flex flex-col gap-2">
               <button className="btn btn-primary" onClick={onClose}>
                 Reprendre
@@ -277,7 +277,7 @@ export function PauseMenu({ open, onClose }: { open: boolean; onClose: () => voi
                 <Home size={14} /> Menu principal
               </button>
             </div>
-            <div className="mt-5 space-y-1 text-xs text-white/50">
+            <div className="mt-5 space-y-1 text-xs text-fg/50">
               <p>• Pincez / molette pour zoomer, glissez pour déplacer la carte.</p>
               <p>• Attaque : touchez une cible ennemie, puis touchez-la à nouveau pour lancer les dés.</p>
               <p>• Blitz ⚡ enchaîne les combats jusqu’à la victoire ou l’épuisement.</p>

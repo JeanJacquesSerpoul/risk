@@ -2,9 +2,11 @@ import { AnimatePresence, motion } from 'motion/react'
 import { GameScreen } from './components/GameScreen'
 import { MenuScreen } from './components/MenuScreen'
 import { useGame } from './game/store'
+import { useApplyTheme } from './game/theme'
 
 export default function App() {
   const screen = useGame((s) => s.screen)
+  useApplyTheme()
   return (
     <AnimatePresence mode="wait">
       {screen === 'menu' ? (

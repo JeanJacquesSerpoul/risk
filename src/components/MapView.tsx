@@ -159,7 +159,7 @@ export function MapView() {
       </div>
       <div
         className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(ellipse at center, transparent 55%, rgba(2,6,16,0.75) 100%)' }}
+        style={{ background: 'radial-gradient(ellipse at center, transparent 55%, var(--vignette) 100%)' }}
       />
     </div>
   )

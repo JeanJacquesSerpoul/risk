@@ -76,7 +76,8 @@ function noise(dur: number, opts: { gain?: number; delay?: number; from?: number
 }
 
 const vibrate = (p: number | number[]) => {
-  if (enabled && 'vibrate' in navigator) navigator.vibrate(p)
+  // Chrome refuses (and logs an error) before the user has interacted with the page.
+  if (enabled && 'vibrate' in navigator && (navigator.userActivation?.hasBeenActive ?? true)) navigator.vibrate(p)
 }
 
 export const sfx = {

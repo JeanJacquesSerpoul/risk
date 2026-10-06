@@ -7,6 +7,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <link rel="icon" href="/favicon.svg" />
     <title>RISK — Conquête du Monde</title>
+    <script>
+      // Apply the saved theme before first paint (avoids a dark/light flash).
+      try {
+        var t = (JSON.parse(localStorage.getItem('risk-save-v1')) || {}).state?.settings?.theme || 'system'
+        if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.dataset.theme = t
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -130,14 +130,14 @@ export function DiceTray() {
                 key={battle.key}
                 initial={{ scale: 0.5, rotate: -20 }}
                 animate={{ scale: 1, rotate: 0 }}
-                className="font-display text-sm font-black text-white/70 sm:text-lg"
+                className="font-display text-sm font-black text-fg/70 sm:text-lg"
               >
                 VS
               </motion.div>
               {!battle.rolling && (
                 <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="mt-1 flex gap-2 font-display text-[10px] font-bold sm:text-xs">
                   <span style={{ color: battle.attLoss ? '#ff5d73' : '#64748b' }}>-{battle.attLoss}</span>
-                  <span className="text-white/30">|</span>
+                  <span className="text-fg/30">|</span>
                   <span style={{ color: battle.defLoss ? '#ff5d73' : '#64748b' }}>-{battle.defLoss}</span>
                 </motion.div>
               )}

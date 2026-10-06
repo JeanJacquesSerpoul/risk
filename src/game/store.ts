@@ -30,8 +30,12 @@ export interface PlayerConfig {
   difficulty: Difficulty
 }
 
+export type ThemeMode = 'system' | 'light' | 'dark'
+
 export interface Settings {
   sound: boolean
+  /** Colour theme; 'system' follows the OS preference. Optional for saves made before it existed. */
+  theme?: ThemeMode
   /** Animation speed multiplier (1 normal, 2 fast, 4 turbo). */
   speed: number
 }
@@ -299,7 +303,7 @@ export const useGame = create<GameState>()(
         busy: false,
         log: [],
         winner: null,
-        settings: { sound: true, speed: 1 },
+        settings: { sound: true, speed: 1, theme: 'system' },
         gameId: 0,
         fx: [],
         banner: null,

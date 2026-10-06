@@ -18,9 +18,9 @@ const StaticLayers = memo(function StaticLayers() {
     <>
       <defs>
         <radialGradient id="ocean" gradientUnits="userSpaceOnUse" cx={500} cy={280} r={720}>
-          <stop offset="0%" stopColor="#0c2547" />
-          <stop offset="55%" stopColor="#071630" />
-          <stop offset="100%" stopColor="#030913" />
+          <stop offset="0%" style={{ stopColor: 'var(--ocean-0)' }} />
+          <stop offset="55%" style={{ stopColor: 'var(--ocean-1)' }} />
+          <stop offset="100%" style={{ stopColor: 'var(--ocean-2)' }} />
         </radialGradient>
         <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="3" result="b" />
@@ -41,9 +41,9 @@ const StaticLayers = memo(function StaticLayers() {
         </marker>
       </defs>
       <rect x={-3000} y={-3000} width={7000} height={7000} fill="url(#ocean)" />
-      <path d={GEO.oceanGrid} fill="none" stroke="#38bdf8" strokeOpacity={0.07} strokeWidth={0.6} />
+      <path d={GEO.oceanGrid} fill="none" style={{ stroke: 'var(--map-grid)' }} strokeWidth={0.6} />
       {/* latitude / longitude lines */}
-      <g stroke="#38bdf8" strokeOpacity={0.08} strokeWidth={0.5} strokeDasharray="2 6">
+      <g style={{ stroke: 'var(--map-lines)' }} strokeWidth={0.5} strokeDasharray="2 6">
         {[100, 200, 300, 400, 500].map((y) => (
           <line key={y} x1={0} x2={MAP_W} y1={y} y2={y} />
         ))}
@@ -51,8 +51,8 @@ const StaticLayers = memo(function StaticLayers() {
           <line key={x} y1={0} y2={MAP_H} x1={x} x2={x} />
         ))}
       </g>
-      <path d={GEO.coast} fill="none" stroke="#22d3ee" strokeOpacity={0.55} strokeWidth={6} filter="url(#softglow)" />
-      <g className="lane" fill="none" stroke="#9bdcff" strokeOpacity={0.55} strokeWidth={1.4} strokeDasharray="4 4" strokeLinecap="round">
+      <path d={GEO.coast} fill="none" style={{ stroke: 'var(--coast-glow)' }} strokeWidth={6} filter="url(#softglow)" />
+      <g className="lane" fill="none" style={{ stroke: 'var(--lane)' }} strokeWidth={1.4} strokeDasharray="4 4" strokeLinecap="round">
         {GEO.seaLanes.map((l) => (
           <path key={l.a + l.b} d={l.d} />
         ))}
@@ -80,7 +80,7 @@ function Territory({ id, color, mark }: { id: string; color: string; mark: Mark 
         style={{ transition: 'fill 0.6s, opacity 0.3s', opacity: dim ? 0.45 : mark === 'selected' ? 1 : 0.86 }}
       />
       <path d={g.tiles} fill="url(#tileShade)" style={{ pointerEvents: 'none', opacity: dim ? 0.3 : 1 }} />
-      <path d={g.outline} fill="rgba(0,0,0,0)" stroke="#020617" strokeOpacity={0.85} strokeWidth={1.6} strokeLinejoin="round" />
+      <path d={g.outline} fill="rgba(0,0,0,0)" style={{ stroke: 'var(--tile-outline)' }} strokeWidth={1.6} strokeLinejoin="round" />
     </g>
   )
 }
@@ -92,7 +92,7 @@ function Badge({ id, armies, color, active }: { id: string; armies: number; colo
       <g className="keep-scale">
         <motion.g key={armies} initial={{ scale: 1.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 14 }}>
           {active && <circle r={13} fill={color} opacity={0.5} filter="url(#softglow)" />}
-          <circle r={8.6} fill="#06101f" stroke={color} strokeWidth={2.2} />
+          <circle r={8.6} style={{ fill: 'var(--badge-bg)' }} stroke={color} strokeWidth={2.2} />
           <circle r={6.6} fill={color} opacity={0.22} />
           <text
             y={0.4}
@@ -101,7 +101,7 @@ function Badge({ id, armies, color, active }: { id: string; armies: number; colo
             fontFamily="Orbitron, sans-serif"
             fontWeight={700}
             fontSize={armies >= 100 ? 5.4 : armies >= 10 ? 7 : 8.2}
-            fill="#fff"
+            style={{ fill: 'var(--badge-fg)' }}
           >
             {armies}
           </text>
@@ -121,8 +121,7 @@ function Label({ id, name }: { id: string; name: string }) {
           fontFamily="Rajdhani, sans-serif"
           fontWeight={700}
           fontSize={5.6}
-          fill="#e6f6ff"
-          stroke="#020617"
+          style={{ fill: 'var(--label-fill)', stroke: 'var(--label-stroke)' }}
           strokeWidth={1.6}
           paintOrder="stroke"
           letterSpacing={0.3}
@@ -253,7 +252,7 @@ export function MapBoard({ width, height }: { width: number; height: number }) {
         <Territory key={t.id} id={t.id} color={players[board[t.id].owner]?.color ?? '#555'} mark={marks[t.id]} />
       ))}
 
-      <path d={GEO.continentBorders} fill="none" stroke="#e0f2fe" strokeOpacity={0.35} strokeWidth={1} strokeDasharray="2 2" style={{ pointerEvents: 'none' }} />
+      <path d={GEO.continentBorders} fill="none" strokeWidth={1} strokeDasharray="2 2" style={{ pointerEvents: 'none', stroke: 'var(--continent-border)' }} />
 
       {/* Highlights */}
       <g style={{ pointerEvents: 'none' }}>

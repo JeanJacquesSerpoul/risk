@@ -5,6 +5,7 @@ import { GEO } from '../game/hexMap'
 import { CONTINENTS, MAP_H, MAP_W, TERRITORIES } from '../game/mapData'
 import { type Difficulty, PLAYER_COLORS, PLAYER_NAMES } from '../game/rules'
 import { type PlayerConfig, useGame } from '../game/store'
+import { THEME_LABEL, useResolvedTheme } from '../game/theme'
 
 const DIFF_LABEL: Record<Difficulty, string> = { easy: 'Recrue', normal: 'Général', hard: 'Maréchal' }
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard']
@@ -28,9 +29,9 @@ function BackgroundMap() {
               <feGaussianBlur stdDeviation="6" />
             </filter>
           </defs>
-          <rect width={MAP_W} height={MAP_H} fill="#040a16" />
-          <path d={GEO.oceanGrid} fill="none" stroke="#38bdf8" strokeOpacity={0.06} strokeWidth={0.6} />
-          <path d={GEO.coast} fill="none" stroke="#22d3ee" strokeOpacity={0.5} strokeWidth={8} filter="url(#mglow)" />
+          <rect x={-500} y={-500} width={MAP_W + 1000} height={MAP_H + 1000} style={{ fill: 'var(--bg)' }} />
+          <path d={GEO.oceanGrid} fill="none" style={{ stroke: 'var(--map-grid)' }} strokeWidth={0.6} />
+          <path d={GEO.coast} fill="none" style={{ stroke: 'var(--coast-glow)' }} strokeWidth={8} filter="url(#mglow)" />
           {TERRITORIES.map((t, i) => (
             <motion.path
               key={t.id}
@@ -41,8 +42,8 @@ function BackgroundMap() {
               transition={{ duration: 4, delay: i * 0.12, repeat: Infinity }}
             />
           ))}
-          <path d={GEO.coast} fill="none" stroke="#67e8f9" strokeOpacity={0.6} strokeWidth={0.8} />
-          <g className="lane" fill="none" stroke="#9bdcff" strokeOpacity={0.3} strokeWidth={1} strokeDasharray="4 4">
+          <path d={GEO.coast} fill="none" style={{ stroke: 'var(--neon)' }} strokeOpacity={0.6} strokeWidth={0.8} />
+          <g className="lane" fill="none" style={{ stroke: 'var(--lane)' }} strokeOpacity={0.6} strokeWidth={1} strokeDasharray="4 4">
             {GEO.seaLanes.map((l) => (
               <path key={l.a + l.b} d={l.d} />
             ))}
@@ -52,7 +53,7 @@ function BackgroundMap() {
       {particles.map((p) => (
         <motion.div
           key={p.id}
-          className="absolute rounded-full bg-cyan-300"
+          className="absolute rounded-full bg-neon"
           style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.s, height: p.s, boxShadow: '0 0 8px #22d3ee' }}
           animate={{ y: [0, -80, 0], opacity: [0, 0.8, 0] }}
           transition={{ duration: p.d, repeat: Infinity, delay: p.d / 3 }}
@@ -60,12 +61,13 @@ function BackgroundMap() {
       ))}
       <div className="scanlines absolute inset-0" />
       <div className="sweep" />
-      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, rgba(4,10,22,0.35) 0%, rgba(4,10,22,0.92) 75%)' }} />
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at center, var(--menu-veil-0) 0%, var(--menu-veil-1) 75%)' }} />
     </div>
   )
 }
 
 function Title() {
+  const dark = useResolvedTheme() === 'dark'
   return (
     <div className="relative text-center">
       <div className="flex justify-center">
@@ -74,11 +76,11 @@ function Title() {
             key={i}
             className="font-display text-7xl font-black sm:text-9xl"
             style={{
-              background: 'linear-gradient(180deg, #ffffff 0%, #67e8f9 45%, #2563eb 100%)',
+              background: dark ? 'linear-gradient(180deg, #ffffff 0%, #67e8f9 45%, #2563eb 100%)' : 'linear-gradient(180deg, #0ea5e9 0%, #2563eb 55%, #1e3a8a 100%)',
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',
               color: 'transparent',
-              filter: 'drop-shadow(0 0 22px rgba(34,211,238,0.7))',
+              filter: dark ? 'drop-shadow(0 0 22px rgba(34,211,238,0.7))' : 'drop-shadow(0 4px 10px rgba(30,64,175,0.35))',
             }}
             initial={{ y: -80, opacity: 0, rotateX: 90 }}
             animate={{ y: 0, opacity: 1, rotateX: 0 }}
@@ -89,7 +91,7 @@ function Title() {
         ))}
       </div>
       <motion.div
-        className="mt-1 font-display text-[10px] font-bold tracking-[0.6em] text-cyan-200/80 sm:text-sm"
+        className="mt-1 font-display text-[10px] font-bold tracking-[0.6em] text-neon/80 sm:text-sm"
         initial={{ opacity: 0, letterSpacing: '1.5em' }}
         animate={{ opacity: 1, letterSpacing: '0.6em' }}
         transition={{ delay: 0.8, duration: 1 }}
@@ -104,6 +106,8 @@ export function MenuScreen() {
   const newGame = useGame((s) => s.newGame)
   const resume = useGame((s) => s.resume)
   const hasSave = useGame((s) => s.players.length > 0 && s.winner === null)
+  const theme = useGame((s) => s.settings.theme ?? 'system')
+  const updateSettings = useGame((s) => s.updateSettings)
   const [manual, setManual] = useState(false)
   const [players, setPlayers] = useState<PlayerConfig[]>([
     { name: 'Vous', color: PLAYER_COLORS[1], ai: false, difficulty: 'normal' },
@@ -139,7 +143,7 @@ export function MenuScreen() {
           transition={{ delay: 1, type: 'spring', stiffness: 120, damping: 18 }}
         >
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-xs font-bold tracking-[0.3em] text-white/70">GÉNÉRAUX ({players.length})</h2>
+            <h2 className="font-display text-xs font-bold tracking-[0.3em] text-fg/70">GÉNÉRAUX ({players.length})</h2>
             <div className="flex gap-1">
               <button className="btn btn-ghost !p-2" disabled={players.length <= 2} onClick={() => setPlayers(players.slice(0, -1))}>
                 <Minus size={14} />
@@ -159,7 +163,7 @@ export function MenuScreen() {
                   animate={{ opacity: 1, x: 0, height: 'auto' }}
                   exit={{ opacity: 0, x: 30, height: 0 }}
                   className="flex items-center gap-2 rounded-2xl p-1.5 pr-2"
-                  style={{ background: `linear-gradient(90deg, ${p.color}26, rgba(255,255,255,0.03))`, border: `1px solid ${p.color}55` }}
+                  style={{ background: `linear-gradient(90deg, ${p.color}26, var(--ghost-bg))`, border: `1px solid ${p.color}55` }}
                 >
                   <button
                     onClick={() => cycleColor(i)}
@@ -171,7 +175,7 @@ export function MenuScreen() {
                     value={p.name}
                     maxLength={14}
                     onChange={(e) => patch(i, { name: e.target.value })}
-                    className="min-w-0 flex-1 rounded-lg bg-black/30 px-2 py-1.5 text-base font-bold outline-none focus:ring-2 focus:ring-cyan-400/50"
+                    className="min-w-0 flex-1 rounded-lg bg-surface px-2 py-1.5 text-base font-bold outline-none focus:ring-2 focus:ring-neon/50"
                   />
                   <button className={`chip flex items-center gap-1`} data-on={!p.ai} onClick={() => patch(i, { ai: !p.ai })}>
                     {p.ai ? <Bot size={13} /> : <User size={13} />}
@@ -187,7 +191,7 @@ export function MenuScreen() {
             </AnimatePresence>
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="text-white/60">Déploiement initial</span>
+            <span className="text-fg/60">Déploiement initial</span>
             <div className="flex gap-1">
               <button className="chip" data-on={!manual} onClick={() => setManual(false)}>
                 AUTOMATIQUE
@@ -195,6 +199,16 @@ export function MenuScreen() {
               <button className="chip" data-on={manual} onClick={() => setManual(true)}>
                 MANUEL
               </button>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-fg/60">Thème</span>
+            <div className="flex gap-1">
+              {(['system', 'light', 'dark'] as const).map((m) => (
+                <button key={m} className="chip" data-on={theme === m} onClick={() => updateSettings({ theme: m })}>
+                  {THEME_LABEL[m].toUpperCase()}
+                </button>
+              ))}
             </div>
           </div>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -213,7 +227,7 @@ export function MenuScreen() {
             </motion.button>
           </div>
         </motion.div>
-        <motion.p className="max-w-md text-center text-xs text-white/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.6 }}>
+        <motion.p className="max-w-md text-center text-xs text-fg/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.6 }}>
           Plusieurs humains peuvent jouer à tour de rôle sur le même appareil. Partie sauvegardée automatiquement.
         </motion.p>
       </div>
