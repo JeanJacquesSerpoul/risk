@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { Bomb, PersonStanding, Sparkles, X } from 'lucide-react'
+import { Bomb, CircleCheck, CircleX, PersonStanding, Sparkles, WandSparkles, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CONTINENTS, TERRITORY_BY_ID } from '../game/mapData'
-import { type Card, type CardKind, isValidSet, tradeValue } from '../game/rules'
+import { type Card, type CardKind, findSet, isValidSet, tradeValue } from '../game/rules'
 import { useGame } from '../game/store'
 
 function HorseIcon({ size }: { size: number }) {
@@ -75,6 +75,7 @@ export function CardsPanel() {
   const cards = me.cards
   const chosen = cards.filter((c) => sel.includes(c.id))
   const valid = isValidSet(chosen)
+  const best = findSet(cards, board, me.id)
   const mustTrade = cards.length >= 5
   const canTrade = phase === 'reinforce' || (phase === 'attack' && mustTrade)
 
@@ -118,17 +119,36 @@ export function CardsPanel() {
                 </motion.div>
               ))}
             </div>
-            <div className="mt-4 flex items-center justify-between gap-2">
-              <div className="text-sm text-white/50">{sel.length}/3 sélectionnées</div>
-              <button
-                disabled={!valid || !canTrade}
-                className="btn btn-primary"
-                onClick={() => {
-                  if (trade(sel)) setSel([])
-                }}
-              >
-                <Sparkles size={14} /> Échanger +{tradeValue(trades)}
-              </button>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0 flex-1 text-sm">
+                {sel.length < 3 ? (
+                  <span className="text-white/50">
+                    {sel.length}/3 sélectionnées{cards.length >= 3 && !best && ' · aucune combinaison possible'}
+                  </span>
+                ) : valid ? (
+                  <span className="flex items-center gap-1.5 font-bold text-emerald-300">
+                    <CircleCheck size={15} /> Combinaison valide
+                  </span>
+                ) : (
+                  <span className="flex items-start gap-1.5 font-bold text-rose-300">
+                    <CircleX size={15} className="mt-0.5 shrink-0" /> Combinaison invalide : 3 identiques, 3 différentes ou avec un joker
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button disabled={!best} className="btn btn-ghost" onClick={() => best && setSel(best.map((c) => c.id))} title="Sélectionne l'échange le plus avantageux">
+                  <WandSparkles size={14} /> <span className="hidden sm:inline">Meilleure</span> combinaison
+                </button>
+                <button
+                  disabled={!valid || !canTrade}
+                  className="btn btn-primary"
+                  onClick={() => {
+                    if (trade(sel)) setSel([])
+                  }}
+                >
+                  <Sparkles size={14} /> Échanger +{tradeValue(trades)}
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.div>
