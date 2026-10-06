@@ -43,6 +43,52 @@ export function MapView() {
 
   useEffect(() => applyScale(initialScale), [fit]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Smooth wheel zoom: multiplicative, anchored on the cursor, eased over a few frames.
+  useEffect(() => {
+    const el = outer.current
+    if (!el || !fit) return
+    let target = 0
+    let anchor = { x: 0, y: 0 }
+    let raf = 0
+
+    const place = (cw: number, w: number, x: number) => (cw > w ? clamp(x, w - cw, 0) : (w - cw) / 2)
+
+    const step = () => {
+      const ref = tw.current
+      if (!ref) return
+      const { scale, positionX, positionY } = ref.state
+      const done = Math.abs(target - scale) < 0.002
+      const next = done ? target : scale + (target - scale) * 0.22
+      // Keep the content point under the cursor fixed.
+      const cx = (anchor.x - positionX) / scale
+      const cy = (anchor.y - positionY) / scale
+      const x = place(fitW * next, size.w, anchor.x - cx * next)
+      const y = place(fitH * next, size.h, anchor.y - cy * next)
+      ref.setTransform(x, y, next, 0)
+      raf = done ? 0 : requestAnimationFrame(step)
+    }
+
+    const onWheel = (e: WheelEvent) => {
+      const ref = tw.current
+      if (!ref) return
+      e.preventDefault()
+      const rect = el.getBoundingClientRect()
+      anchor = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY
+      // Pinch-to-zoom on trackpads sends ctrl+wheel with small deltas: amplify a bit.
+      const k = e.ctrlKey ? 0.006 : 0.0016
+      const base = raf ? target : ref.state.scale
+      target = clamp(base * Math.exp(-clamp(dy, -120, 120) * k), 1, 7)
+      if (!raf) raf = requestAnimationFrame(step)
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => {
+      el.removeEventListener('wheel', onWheel)
+      cancelAnimationFrame(raf)
+    }
+  }, [fit, fitW, fitH, size.w, size.h])
+
   // Camera follows AI battles happening off-screen.
   useEffect(() => {
     const s = useGame.getState()
@@ -96,7 +142,7 @@ export function MapView() {
             centerOnInit
             limitToBounds
             doubleClick={{ disabled: true }}
-            wheel={{ step: 0.12 }}
+            wheel={{ disabled: true }}
             onInit={(ref) => applyScale(ref.state.scale)}
             onTransform={(_, st) => applyScale(st.scale)}
           >
