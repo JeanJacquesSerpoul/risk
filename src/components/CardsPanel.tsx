@@ -29,16 +29,16 @@ export function GameCard({ card, selected, owned, onClick, small }: { card: Card
   const cont = t ? CONTINENTS[t.continent] : null
   const accent = KIND_COLOR[card.kind]
   return (
-    <motion.button
-      layout
+    // No CSS transform on the card: a transformed card with a glow renders a dark rectangle in Chrome.
+    <button
       onClick={onClick}
-      whileHover={{ y: -6, rotate: -1 }}
-      animate={{ y: selected ? -14 : 0, scale: selected ? 1.05 : 1 }}
-      className={`relative flex shrink-0 flex-col overflow-hidden rounded-xl text-left ${small ? 'h-32 w-24' : 'h-40 w-28 sm:h-44 sm:w-32'}`}
+      className={`relative flex shrink-0 flex-col overflow-hidden rounded-xl text-left hover:brightness-125 ${small ? 'h-32 w-24' : 'h-40 w-28 sm:h-44 sm:w-32'}`}
       style={{
+        top: selected ? -12 : 0,
+        transition: 'top 0.2s ease-out, box-shadow 0.2s, border-color 0.2s, filter 0.2s',
         background: `linear-gradient(160deg, #13284a, #070f1f 70%)`,
         border: `2px solid ${selected ? '#fff' : accent + '88'}`,
-        boxShadow: selected ? `0 0 26px ${accent}, 0 0 0 2px ${accent}` : `0 8px 24px rgba(0,0,0,0.5)`,
+        boxShadow: selected ? `0 0 18px ${accent}, 0 0 0 2px ${accent}` : `0 8px 20px rgba(0,0,0,0.45)`,
       }}
     >
       <div className="h-1.5 w-full" style={{ background: cont?.color ?? accent }} />
@@ -55,7 +55,7 @@ export function GameCard({ card, selected, owned, onClick, small }: { card: Card
         <div className="truncate text-[10px] text-white/50">{cont ? cont.name : 'remplace tout'}</div>
       </div>
       {owned && <div className="absolute right-1 top-3 rounded bg-yellow-400 px-1 font-display text-[8px] font-black text-black">+2</div>}
-    </motion.button>
+    </button>
   )
 }
 
@@ -83,7 +83,7 @@ export function CardsPanel() {
       {open && !me.ai && (
         <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)}>
           <motion.div
-            className="glass w-full max-w-2xl rounded-3xl p-4 sm:p-6"
+            className="glass flex max-h-[92dvh] w-full max-w-3xl flex-col rounded-3xl p-4 sm:p-6"
             initial={{ y: 80, scale: 0.95 }}
             animate={{ y: 0, scale: 1 }}
             exit={{ y: 80, opacity: 0 }}
@@ -105,10 +105,10 @@ export function CardsPanel() {
               )}{' '}
               Prochain échange : <b className="text-white">+{tradeValue(trades)} armées</b>
             </p>
-            <div className="no-scrollbar -mx-2 flex min-h-48 items-end gap-3 overflow-x-auto px-2 pb-2 pt-4">
+            <div className="no-scrollbar -mx-4 flex min-h-48 flex-wrap content-start justify-center gap-3 overflow-y-auto px-4 pb-4 pt-6 sm:-mx-6 sm:px-6">
               {cards.length === 0 && <div className="w-full text-center text-white/40">Conquérez un territoire pendant votre tour pour gagner une carte.</div>}
               {cards.map((c, i) => (
-                <motion.div key={c.id} initial={{ opacity: 0, y: 30, rotateY: 90 }} animate={{ opacity: 1, y: 0, rotateY: 0 }} transition={{ delay: i * 0.06 }}>
+                <motion.div key={c.id} initial={{ opacity: 0, y: 30, scale: 0.85 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: i * 0.06 }}>
                   <GameCard
                     card={c}
                     selected={sel.includes(c.id)}
