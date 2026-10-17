@@ -37,6 +37,9 @@ jobs:
       - name: Vérifier la carte
         run: npm run check-map
 
+      - name: Lancer les tests
+        run: npm test
+
       - name: Construire l'application
         run: npm run build
         env:

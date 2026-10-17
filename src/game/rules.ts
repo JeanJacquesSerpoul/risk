@@ -28,7 +28,6 @@ export interface TerritoryState {
 export type Board = Record<string, TerritoryState>
 
 export const PLAYER_COLORS = ['#ff3b5c', '#2fa8ff', '#2ee59d', '#ffc531', '#b57bff', '#ff8a3d']
-export const PLAYER_NAMES = ['Napoléon', 'César', 'Cléopâtre', 'Gengis Khan', 'Jeanne d’Arc', 'Alexandre']
 
 export const START_ARMIES: Record<number, number> = { 2: 40, 3: 35, 4: 30, 5: 25, 6: 20 }
 

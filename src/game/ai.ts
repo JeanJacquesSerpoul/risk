@@ -1,77 +1,10 @@
-import { CONTINENTS, type ContinentId, TERRITORIES, TERRITORY_BY_ID } from './mapData'
-import { type Board, canAttackFrom, enemyNeighbors, findSet, ownedBy, reachable } from './rules'
+import { netRole } from '../net/netStore'
+import { enemyNeighbors, findSet, ownedBy } from './rules'
 import { sleep, useGame } from './store'
+import { bestAttack, pickReinforceTarget, planFortify } from './strategy'
 
 const get = () => useGame.getState()
 const pause = (ms: number) => sleep(ms / get().settings.speed)
-
-const contOf = (id: string) => TERRITORY_BY_ID[id].continent
-const contIds = (c: ContinentId) => TERRITORIES.filter((t) => t.continent === c).map((t) => t.id)
-
-/** Continent the AI should focus on: highest owned ratio, favouring small continents. */
-function focusContinent(board: Board, p: number): ContinentId {
-  let best: ContinentId = 'au'
-  let bestScore = -Infinity
-  for (const c of Object.keys(CONTINENTS) as ContinentId[]) {
-    const ids = contIds(c)
-    const mine = ids.filter((id) => board[id].owner === p).length
-    if (mine === ids.length) continue
-    const enemyArmies = ids.filter((id) => board[id].owner !== p).reduce((s, id) => s + board[id].armies, 0)
-    const score = mine / ids.length - enemyArmies / 60 + CONTINENTS[c].bonus / ids.length / 4
-    if (score > bestScore) {
-      bestScore = score
-      best = c
-    }
-  }
-  return best
-}
-
-function threat(board: Board, id: string) {
-  return enemyNeighbors(board, id).reduce((s, n) => s + board[n].armies, 0)
-}
-
-function pickReinforceTarget(board: Board, p: number): string {
-  const focus = focusContinent(board, p)
-  const borders = ownedBy(board, p).filter((id) => enemyNeighbors(board, id).length > 0)
-  let best = borders[0] ?? ownedBy(board, p)[0]
-  let bestScore = -Infinity
-  for (const id of borders) {
-    const enemies = enemyNeighbors(board, id)
-    const inFocus = enemies.filter((n) => contOf(n) === focus).length
-    const weakest = Math.min(...enemies.map((n) => board[n].armies))
-    const score = inFocus * 3 + (contOf(id) === focus ? 2 : 0) + board[id].armies * 0.25 - weakest * 0.4 + threat(board, id) * 0.05
-    if (score > bestScore) {
-      bestScore = score
-      best = id
-    }
-  }
-  return best
-}
-
-function bestAttack(board: Board, p: number, aggression: number): [string, string] | null {
-  const focus = focusContinent(board, p)
-  let best: [string, string] | null = null
-  let bestScore = -Infinity
-  for (const from of ownedBy(board, p)) {
-    if (!canAttackFrom(board, from)) continue
-    for (const to of enemyNeighbors(board, from)) {
-      const ratio = (board[from].armies - 1) / board[to].armies
-      if (ratio < aggression) continue
-      const c = contOf(to)
-      const ids = contIds(c)
-      const missing = ids.filter((id) => board[id].owner !== p).length
-      const defOwner = board[to].owner
-      const breaksContinent = ids.every((id) => board[id].owner === defOwner) ? 3 : 0
-      const eliminates = ownedBy(board, defOwner).length === 1 ? 6 : 0
-      const score = ratio * 2 + (c === focus ? 3 : 0) + (missing === 1 ? 4 : 0) + breaksContinent + eliminates - board[to].armies * 0.2
-      if (score > bestScore) {
-        bestScore = score
-        best = [from, to]
-      }
-    }
-  }
-  return best
-}
 
 async function tradeIfPossible(p: number, force: boolean) {
   const s = get()
@@ -153,21 +86,12 @@ async function fortify(p: number, gid: number) {
   await pause(300)
   const s = get()
   if (s.gameId !== gid || s.phase !== 'fortify') return
-  const b = s.board
-  // Move the largest idle stack (no enemy neighbours) to the most threatened reachable border.
-  const idle = ownedBy(b, p)
-    .filter((id) => b[id].armies > 1 && enemyNeighbors(b, id).length === 0)
-    .sort((x, y) => b[y].armies - b[x].armies)[0]
-  if (idle) {
-    const dests = [...reachable(b, idle)].filter((id) => enemyNeighbors(b, id).length > 0)
-    const dest = dests.sort((x, y) => threat(b, y) - b[y].armies - (threat(b, x) - b[x].armies))[0]
-    if (dest) {
-      get().select(idle, dest)
-      await pause(350)
-      useGame.setState({ pendingMove: { kind: 'fortify', from: idle, to: dest, max: b[idle].armies - 1 } })
-      get().confirmMove(b[idle].armies - 1)
-      return
-    }
+  const plan = planFortify(s.board, p)
+  if (plan) {
+    get().select(plan.from, plan.to)
+    await pause(350)
+    get().fortify(plan.from, plan.to, plan.n)
+    return
   }
   get().endTurn()
 }
@@ -179,7 +103,7 @@ export async function runAI() {
   const s = get()
   const p = s.current
   const key = `${s.gameId}:${s.turn}:${p}:${s.phase}`
-  if (running === key || s.screen !== 'game' || s.winner !== null || !s.players[p]?.ai || s.busy) return
+  if (running === key || netRole() === 'guest' || s.screen !== 'game' || s.winner !== null || !s.players[p]?.ai || s.busy || s.handoff !== null) return
   running = key
   const gid = s.gameId
   try {

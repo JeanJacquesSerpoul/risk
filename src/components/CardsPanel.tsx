@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react'
 import { CONTINENTS, TERRITORY_BY_ID } from '../game/mapData'
 import { type Card, type CardKind, findSet, isValidSet, tradeValue } from '../game/rules'
 import { useGame } from '../game/store'
+import { isLocalHuman, useCanAct } from '../game/ui'
+import { useT } from '../i18n/useT'
+import { useNet } from '../net/netStore'
 
 function HorseIcon({ size }: { size: number }) {
   return (
@@ -21,12 +24,12 @@ export function CardIcon({ kind, size = 18 }: { kind: CardKind; size?: number })
   return <Sparkles size={size} />
 }
 
-const KIND_LABEL: Record<CardKind, string> = { infantry: 'Infanterie', cavalry: 'Cavalerie', artillery: 'Artillerie', wild: 'Joker' }
 const KIND_COLOR: Record<CardKind, string> = { infantry: '#38bdf8', cavalry: '#f59e0b', artillery: '#f43f5e', wild: '#c084fc' }
 
 export function GameCard({ card, selected, owned, onClick, small }: { card: Card; selected?: boolean; owned?: boolean; onClick?: () => void; small?: boolean }) {
-  const t = card.territory ? TERRITORY_BY_ID[card.territory] : null
-  const cont = t ? CONTINENTS[t.continent] : null
+  const { t, terr, cont: contName } = useT()
+  const def = card.territory ? TERRITORY_BY_ID[card.territory] : null
+  const cont = def ? CONTINENTS[def.continent] : null
   const accent = KIND_COLOR[card.kind]
   return (
     // No CSS transform on the card: a transformed card with a glow renders a dark rectangle in Chrome.
@@ -47,12 +50,12 @@ export function GameCard({ card, selected, owned, onClick, small }: { card: Card
           <CardIcon kind={card.kind} size={26} />
         </div>
         <div className="font-display text-[9px] font-bold tracking-widest" style={{ color: accent }}>
-          {KIND_LABEL[card.kind].toUpperCase()}
+          {t(`kind.${card.kind}`).toUpperCase()}
         </div>
       </div>
       <div className="bg-black/40 px-2 py-1.5 text-center">
-        <div className="truncate text-xs font-bold leading-tight">{t ? t.name : 'Joker'}</div>
-        <div className="truncate text-[10px] text-white/50">{cont ? cont.name : 'remplace tout'}</div>
+        <div className="truncate text-xs font-bold leading-tight">{def ? terr(def.id) : t('kind.wild')}</div>
+        <div className="truncate text-[10px] text-white/50">{cont ? contName(cont.id) : t('cards.wildSub')}</div>
       </div>
       {owned && <div className="absolute right-1 top-3 rounded bg-yellow-400 px-1 font-display text-[8px] font-black text-black">+2</div>}
     </button>
@@ -67,6 +70,8 @@ export function CardsPanel() {
   const trades = useGame((s) => s.trades)
   const phase = useGame((s) => s.phase)
   const trade = useGame((s) => s.trade)
+  const canAct = useCanAct()
+  const { t } = useT()
   const [sel, setSel] = useState<number[]>([])
 
   useEffect(() => setSel([]), [open, me?.cards.length])
@@ -81,7 +86,7 @@ export function CardsPanel() {
 
   return (
     <AnimatePresence>
-      {open && !me.ai && (
+      {open && canAct && (
         <motion.div className="fixed inset-0 z-40 flex items-end justify-center bg-[var(--scrim)] p-2 backdrop-blur-sm sm:items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)}>
           <motion.div
             className="glass flex max-h-[92dvh] w-full max-w-3xl flex-col rounded-3xl p-4 sm:p-6"
@@ -91,7 +96,7 @@ export function CardsPanel() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-1 flex items-center justify-between">
-              <h2 className="font-display text-lg font-black tracking-widest text-neon">CARTES DE TERRITOIRE</h2>
+              <h2 className="font-display text-lg font-black tracking-widest text-neon">{t('cards.title')}</h2>
               {!mustTrade && (
                 <button className="btn btn-ghost !p-2" onClick={() => setOpen(false)}>
                   <X size={16} />
@@ -100,14 +105,14 @@ export function CardsPanel() {
             </div>
             <p className="mb-4 text-sm text-fg/60">
               {mustTrade ? (
-                <span className="font-bold text-amber-600 dark:text-yellow-300">Vous avez {cards.length} cartes : échange obligatoire !</span>
+                <span className="font-bold text-amber-600 dark:text-yellow-300">{t('cards.mustTrade', { n: cards.length })}</span>
               ) : (
-                'Échangez 3 cartes identiques, 3 différentes, ou avec un joker.'
+                t('cards.rules')
               )}{' '}
-              Prochain échange : <b className="text-fg">+{tradeValue(trades)} armées</b>
+              {t('cards.next')} <b className="text-fg">{t('cards.nextValue', { n: tradeValue(trades) })}</b>
             </p>
             <div className="no-scrollbar -mx-4 flex min-h-48 flex-wrap content-start justify-center gap-3 overflow-y-auto px-4 pb-4 pt-6 sm:-mx-6 sm:px-6">
-              {cards.length === 0 && <div className="w-full text-center text-fg/40">Conquérez un territoire pendant votre tour pour gagner une carte.</div>}
+              {cards.length === 0 && <div className="w-full text-center text-fg/40">{t('cards.empty')}</div>}
               {cards.map((c, i) => (
                 <motion.div key={c.id} initial={{ opacity: 0, y: 30, scale: 0.85 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ delay: i * 0.06 }}>
                   <GameCard
@@ -123,21 +128,22 @@ export function CardsPanel() {
               <div className="min-w-0 flex-1 text-sm">
                 {sel.length < 3 ? (
                   <span className="text-fg/50">
-                    {sel.length}/3 sélectionnées{cards.length >= 3 && !best && ' · aucune combinaison possible'}
+                    {t('cards.selected', { n: sel.length })}
+                    {cards.length >= 3 && !best && t('cards.noSet')}
                   </span>
                 ) : valid ? (
                   <span className="flex items-center gap-1.5 font-bold text-emerald-300">
-                    <CircleCheck size={15} /> Combinaison valide
+                    <CircleCheck size={15} /> {t('cards.valid')}
                   </span>
                 ) : (
                   <span className="flex items-start gap-1.5 font-bold text-rose-300">
-                    <CircleX size={15} className="mt-0.5 shrink-0" /> Combinaison invalide : 3 identiques, 3 différentes ou avec un joker
+                    <CircleX size={15} className="mt-0.5 shrink-0" /> {t('cards.invalid')}
                   </span>
                 )}
               </div>
               <div className="flex gap-2">
-                <button disabled={!best} className="btn btn-ghost" onClick={() => best && setSel(best.map((c) => c.id))} title="Sélectionne l'échange le plus avantageux">
-                  <WandSparkles size={14} /> <span className="hidden sm:inline">Meilleure</span> combinaison
+                <button disabled={!best} className="btn btn-ghost" onClick={() => best && setSel(best.map((c) => c.id))} title={t('cards.bestTitle')}>
+                  <WandSparkles size={14} /> <span className="hidden sm:inline">{t('cards.bestPrefix')}</span> {t('cards.bestWord')}
                 </button>
                 <button
                   disabled={!valid || !canTrade}
@@ -146,7 +152,7 @@ export function CardsPanel() {
                     if (trade(sel)) setSel([])
                   }}
                 >
-                  <Sparkles size={14} /> Échanger +{tradeValue(trades)}
+                  <Sparkles size={14} /> {t('cards.trade', { n: tradeValue(trades) })}
                 </button>
               </div>
             </div>
@@ -159,16 +165,19 @@ export function CardsPanel() {
 
 export function NewCardToast() {
   const last = useGame((s) => s.lastCard)
+  const mine = useGame((s) => !!s.lastCard && isLocalHuman(s, s.lastCard.seat, useNet.getState()))
+  const { t } = useT()
   const [shown, setShown] = useState<number | null>(null)
+  const key = last?.key
   useEffect(() => {
-    if (!last) return
-    setShown(last.key)
+    if (key === undefined) return
+    setShown(key)
     const t = setTimeout(() => setShown(null), 2200)
     return () => clearTimeout(t)
-  }, [last])
+  }, [key])
   return (
     <AnimatePresence>
-      {last && shown === last.key && (
+      {last && mine && shown === last.key && (
         <motion.div
           className="pointer-events-none fixed right-3 top-20 z-40 flex flex-col items-center gap-2"
           initial={{ x: 200, rotate: 25, opacity: 0 }}
@@ -176,7 +185,7 @@ export function NewCardToast() {
           exit={{ y: -60, opacity: 0, scale: 0.6 }}
           transition={{ type: 'spring', stiffness: 220, damping: 18 }}
         >
-          <div className="font-display text-xs font-black tracking-widest text-amber-500 dark:text-yellow-300 text-glow">NOUVELLE CARTE</div>
+          <div className="font-display text-xs font-black tracking-widest text-amber-500 dark:text-yellow-300 text-glow">{t('cards.new')}</div>
           <GameCard card={last.card} small />
         </motion.div>
       )}

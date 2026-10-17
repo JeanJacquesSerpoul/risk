@@ -1,9 +1,12 @@
 import { motion } from 'motion/react'
-import { Bot, Gauge, Layers, Menu, Moon, Sun, SunMoon, Volume2, VolumeX } from 'lucide-react'
+import { Bot, Gauge, Globe, Layers, Menu, Moon, Settings, Sun, SunMoon, Volume2, VolumeX } from 'lucide-react'
 import { CONTINENTS, type ContinentId, TERRITORY_IDS } from '../game/mapData'
 import { continentOwner } from '../game/rules'
 import { useGame } from '../game/store'
-import { nextTheme, THEME_LABEL } from '../game/theme'
+import { nextTheme } from '../game/theme'
+import { openDialog } from '../game/ui'
+import { useT } from '../i18n/useT'
+import { useNet } from '../net/netStore'
 
 export function TopBar({ onMenu }: { onMenu: () => void }) {
   const players = useGame((s) => s.players)
@@ -12,6 +15,8 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   const turn = useGame((s) => s.turn)
   const settings = useGame((s) => s.settings)
   const update = useGame((s) => s.updateSettings)
+  const net = useNet()
+  const { t } = useT()
 
   const stats = players.map((p) => {
     const ids = TERRITORY_IDS.filter((id) => board[id]?.owner === p.id)
@@ -23,10 +28,21 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
       <div className="glass pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-1.5 sm:gap-3 sm:px-3">
         <div className="hidden shrink-0 flex-col leading-none sm:flex">
           <span className="font-display text-lg font-black tracking-[0.25em] text-neon text-glow">RISK</span>
-          <span className="font-display text-[9px] tracking-widest text-fg/50">TOUR {turn}</span>
+          <span className="font-display text-[9px] tracking-widest text-fg/50">
+            {t('top.turn')} {turn}
+          </span>
+          {net.role !== 'off' && net.code && (
+            <span
+              className="mt-0.5 flex items-center gap-1 font-display text-[8px] tracking-widest"
+              style={{ color: net.link === 'online' ? '#10b981' : '#f59e0b' }}
+              title={t(`link.${net.link}`)}
+            >
+              <Globe size={9} /> {net.code}
+            </span>
+          )}
         </div>
         <div className="flex shrink-0 flex-col items-center leading-none sm:hidden">
-          <span className="font-display text-[8px] text-fg/50">TOUR</span>
+          <span className="font-display text-[8px] text-fg/50">{t('top.turn')}</span>
           <span className="font-display text-sm font-bold text-neon">{turn}</span>
         </div>
 
@@ -56,13 +72,13 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                   </span>
                   <span className="font-display text-[9px] text-fg/60">
                     {stats[i].territories}
-                    <span className="opacity-50">T</span> · {stats[i].armies}
-                    <span className="opacity-50">A</span>
+                    <span className="opacity-50">{t('abbr.territories')}</span> · {stats[i].armies}
+                    <span className="opacity-50">{t('abbr.armies')}</span>
                     {p.cards.length > 0 && (
                       <>
                         {' '}
                         · {p.cards.length}
-                        <span className="opacity-50">C</span>
+                        <span className="opacity-50">{t('abbr.cards')}</span>
                       </>
                     )}
                   </span>
@@ -75,7 +91,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
         <div className="flex shrink-0 items-center gap-1">
           <button
             className="btn btn-ghost !px-2 !py-1.5"
-            title="Vitesse"
+            title={t('top.speed')}
             onClick={() => update({ speed: settings.speed === 1 ? 2 : settings.speed === 2 ? 4 : 1 })}
           >
             <Gauge size={15} />
@@ -83,15 +99,18 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
           </button>
           <button
             className="btn btn-ghost !px-2 !py-1.5"
-            title={`Thème : ${THEME_LABEL[settings.theme ?? 'system']}`}
+            title={t('top.theme', { mode: t(`theme.${settings.theme ?? 'system'}`) })}
             onClick={() => update({ theme: nextTheme(settings.theme ?? 'system') })}
           >
             {settings.theme === 'light' ? <Sun size={15} /> : settings.theme === 'dark' ? <Moon size={15} /> : <SunMoon size={15} />}
           </button>
-          <button className="btn btn-ghost !px-2 !py-1.5" title="Son" onClick={() => update({ sound: !settings.sound })}>
+          <button className="btn btn-ghost !px-2 !py-1.5" title={t('top.sound')} onClick={() => update({ sound: !settings.sound })}>
             {settings.sound ? <Volume2 size={15} /> : <VolumeX size={15} />}
           </button>
-          <button className="btn btn-ghost !px-2 !py-1.5" title="Menu" onClick={onMenu}>
+          <button className="btn btn-ghost !px-2 !py-1.5" title={t('top.settings')} onClick={() => openDialog('settings')}>
+            <Settings size={15} />
+          </button>
+          <button className="btn btn-ghost !px-2 !py-1.5" title={t('top.menu')} onClick={onMenu}>
             <Menu size={15} />
           </button>
         </div>
@@ -113,6 +132,7 @@ function ContinentLegend() {
 function ContinentChips() {
   const board = useGame((s) => s.board)
   const players = useGame((s) => s.players)
+  const { cont } = useT()
   return (
     <>
       {(Object.keys(CONTINENTS) as ContinentId[]).map((c) => {
@@ -128,7 +148,7 @@ function ContinentChips() {
               color: col ?? 'color-mix(in srgb, var(--fg) 60%, transparent)',
             }}
           >
-            {CONTINENTS[c].name} +{CONTINENTS[c].bonus}
+            {cont(c)} +{CONTINENTS[c].bonus}
           </span>
         )
       })}

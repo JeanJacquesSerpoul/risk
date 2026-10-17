@@ -80,7 +80,7 @@ const vibrate = (p: number | number[]) => {
   if (enabled && 'vibrate' in navigator && (navigator.userActivation?.hasBeenActive ?? true)) navigator.vibrate(p)
 }
 
-export const sfx = {
+const raw = {
   click: () => tone(880, 0.06, { type: 'triangle', gain: 0.12 }),
   select: () => {
     tone(520, 0.08, { type: 'triangle', gain: 0.15 })
@@ -123,3 +123,29 @@ export const sfx = {
     noise(1.5, { gain: 0.4, from: 800, to: 40, delay: 1.4 })
   },
 }
+
+export type SfxName = keyof typeof raw
+
+type SfxListener = (name: SfxName) => void
+const listeners = new Set<SfxListener>()
+
+/** Called for every sound effect played (online hosts forward them to their guests). */
+export function onSfx(fn: SfxListener) {
+  listeners.add(fn)
+  return () => void listeners.delete(fn)
+}
+
+/** Plays a sound received from the host, without forwarding it again. */
+export function playSfx(name: string) {
+  if (name in raw) raw[name as SfxName]()
+}
+
+export const sfx = Object.fromEntries(
+  (Object.keys(raw) as SfxName[]).map((name) => [
+    name,
+    () => {
+      raw[name]()
+      for (const fn of listeners) fn(name)
+    },
+  ]),
+) as Record<SfxName, () => void>

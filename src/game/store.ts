@@ -1,6 +1,9 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import { ADJ, TERRITORY_BY_ID, TERRITORY_IDS } from './mapData'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { detectLang, type Lang, type Msg, msg } from '../i18n'
+import { netRole } from '../net/netStore'
+import { REMOTE_ACTIONS, type RemoteAction, type RoomMeta } from '../net/protocol'
+import { ADJ, TERRITORY_IDS } from './mapData'
 import {
   type Board,
   buildDeck,
@@ -38,6 +41,14 @@ export interface Settings {
   theme?: ThemeMode
   /** Animation speed multiplier (1 normal, 2 fast, 4 turbo). */
   speed: number
+  /** Interface language (the browser's when unset). */
+  lang?: Lang
+  /** Military advisor for human players (on when unset). */
+  advisor?: boolean
+  /** Hand-over screen between humans sharing the device (on when unset). */
+  passDevice?: boolean
+  /** Voice-over of the presentation video (on when unset). */
+  voice?: boolean
 }
 
 export interface BattleView {
@@ -64,7 +75,7 @@ export interface PendingMove {
 
 export interface LogEntry {
   id: number
-  text: string
+  msg: Msg
   color?: string
 }
 
@@ -74,8 +85,8 @@ export type Fx =
 
 export interface Banner {
   key: number
-  title: string
-  subtitle?: string
+  title: Msg
+  subtitle?: Msg
   color: string
 }
 
@@ -85,7 +96,7 @@ export interface PlayerStats {
   lost: number
 }
 
-interface GameData {
+export interface GameData {
   screen: 'menu' | 'game'
   players: Player[]
   board: Board
@@ -114,11 +125,15 @@ interface GameData {
   cardsOpen: boolean
   breakdown: ReinforcementBreakdown | null
   stats: PlayerStats[]
-  lastCard: { key: number; card: Card } | null
+  lastCard: { key: number; card: Card; seat: number } | null
+  /** Seat waiting for its player to take the device (several humans on one device). */
+  handoff: number | null
+  /** Online game hosted by this device (secret seat tokens included). */
+  room: RoomMeta | null
 }
 
 interface GameActions {
-  newGame: (configs: PlayerConfig[], manualDeploy: boolean) => void
+  newGame: (configs: PlayerConfig[], manualDeploy: boolean, room?: RoomMeta | null) => void
   toMenu: () => void
   resume: () => void
   clickTerritory: (id: string) => void
@@ -131,33 +146,60 @@ interface GameActions {
   cancelMove: () => void
   endAttack: () => void
   endTurn: () => void
+  fortify: (from: string, to: string, n: number) => void
   trade: (cardIds: number[]) => boolean
   setCardsOpen: (open: boolean) => void
   select: (from: string | null, to?: string | null) => void
+  revealTurn: () => void
+  setAi: (seat: number) => void
   updateSettings: (s: Partial<Settings>) => void
   removeFx: (id: number) => void
 }
 
 export type GameState = GameData & GameActions
 
+/** Game state shared with online guests (everything but the device's own data). */
+export type Snapshot = Omit<GameData, 'settings' | 'screen' | 'room'>
+
 let uid = 1
 const nextId = () => uid++
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-const name = (id: string) => TERRITORY_BY_ID[id].name
+/** On a guest's device, game actions are sent to the host instead of being played here. */
+let forwarder: ((name: RemoteAction, args: unknown[]) => void) | null = null
+export const setForwarder = (f: typeof forwarder) => {
+  forwarder = f
+}
+
+const DEFAULT_SETTINGS: Settings = { sound: true, speed: 1, theme: 'system', lang: detectLang(), advisor: true, passDevice: true, voice: true }
+
+/** localStorage, except on a guest's device (the game shown belongs to the host). */
+const storage = createJSONStorage(() => ({
+  getItem: (k: string) => (typeof localStorage === 'undefined' ? null : localStorage.getItem(k)),
+  setItem: (k: string, v: string) => {
+    if (typeof localStorage !== 'undefined' && netRole() !== 'guest') localStorage.setItem(k, v)
+  },
+  removeItem: (k: string) => {
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(k)
+  },
+}))
 
 export const useGame = create<GameState>()(
   persist(
     (set, get) => {
-      const log = (text: string, color?: string) =>
-        set((s) => ({ log: [...s.log.slice(-59), { id: nextId(), text, color }] }))
+      const log = (m: Msg, color?: string) => set((s) => ({ log: [...s.log.slice(-59), { id: nextId(), msg: m, color }] }))
 
       const addFx = (fx: Fx extends infer F ? (F extends Fx ? Omit<F, 'id'> : never) : never) => set((s) => ({ fx: [...s.fx, { ...fx, id: nextId() } as Fx] }))
 
-      const banner = (title: string, color: string, subtitle?: string) =>
-        set({ banner: { key: nextId(), title, subtitle, color } })
+      const banner = (title: Msg, color: string, subtitle?: Msg) => set({ banner: { key: nextId(), title, subtitle, color } })
 
       const dur = (ms: number) => ms / get().settings.speed
+
+      /** Several humans share this device: hide the game until the next one is ready. */
+      const needsHandoff = (p: number) => {
+        const s = get()
+        return s.settings.passDevice !== false && !s.room && !s.players[p].ai && s.players.filter((x) => !x.ai && x.alive).length >= 2
+      }
 
       const startTurn = (p: number, turn: number) => {
         const s = get()
@@ -176,9 +218,10 @@ export const useGame = create<GameState>()(
           pendingMove: null,
           battle: null,
           cardsOpen: !player.ai && player.cards.length >= 5,
+          handoff: needsHandoff(p) ? p : null,
         })
-        banner(player.name, player.color, `Tour ${turn} · +${breakdown.total} renforts`)
-        log(`Tour ${turn} — ${player.name} reçoit ${breakdown.total} renforts`, player.color)
+        banner(msg('raw', { text: player.name }), player.color, msg('banner.turn', { turn, n: breakdown.total }))
+        log(msg('log.turn', { turn, name: player.name, n: breakdown.total }), player.color)
         sfx.turn()
       }
 
@@ -192,8 +235,8 @@ export const useGame = create<GameState>()(
 
       const startDeploy = (p: number) => {
         const s = get()
-        set({ current: p, phase: 'deploy', pool: s.deployLeft[p], selected: null, target: null })
-        banner(s.players[p].name, s.players[p].color, `Déploiement · ${s.deployLeft[p]} armées`)
+        set({ current: p, phase: 'deploy', pool: s.deployLeft[p], selected: null, target: null, handoff: needsHandoff(p) ? p : null })
+        banner(msg('raw', { text: s.players[p].name }), s.players[p].color, msg('banner.deploy', { n: s.deployLeft[p] }))
         sfx.turn()
       }
 
@@ -214,7 +257,7 @@ export const useGame = create<GameState>()(
         set({ board, conquered: true, stats })
         addFx({ kind: 'shock', territory: to, color: attacker.color })
         sfx.conquer()
-        log(`${attacker.name} conquiert ${name(to)}`, attacker.color)
+        log(msg('log.conquer', { name: attacker.name, terr: { terr: to } }), attacker.color)
 
         const extra = board[from].armies - 1
         if (extra > 0) set({ pendingMove: { kind: 'conquest', from, to, max: extra } })
@@ -226,9 +269,9 @@ export const useGame = create<GameState>()(
             i === defender ? { ...p, alive: false, cards: [] } : i === s.current ? { ...p, cards: [...p.cards, ...loser.cards] } : p,
           )
           set({ players })
-          log(`☠ ${loser.name} est éliminé !`, loser.color)
+          log(msg('log.eliminated', { name: loser.name }), loser.color)
           sfx.eliminated()
-          banner(`${loser.name} éliminé`, loser.color, `par ${attacker.name}`)
+          banner(msg('banner.eliminated', { name: loser.name }), loser.color, msg('banner.by', { name: attacker.name }))
           if (players.filter((p) => p.alive).length === 1) {
             set({ winner: s.current, pendingMove: null })
             setTimeout(() => sfx.victory(), 600)
@@ -281,38 +324,8 @@ export const useGame = create<GameState>()(
         return b[from].owner === s.current && b[to].owner !== s.current && b[from].armies >= 2 && ADJ[from].includes(to)
       }
 
-      return {
-        screen: 'menu',
-        players: [],
-        board: {},
-        current: 0,
-        phase: 'reinforce',
-        turn: 1,
-        pool: 0,
-        deployLeft: [],
-        placeStep: 1,
-        selected: null,
-        target: null,
-        conquered: false,
-        returnToAttack: false,
-        deck: [],
-        discard: [],
-        trades: 0,
-        pendingMove: null,
-        battle: null,
-        busy: false,
-        log: [],
-        winner: null,
-        settings: { sound: true, speed: 1, theme: 'system' },
-        gameId: 0,
-        fx: [],
-        banner: null,
-        cardsOpen: false,
-        breakdown: null,
-        stats: [],
-        lastCard: null,
-
-        newGame: (configs, manualDeploy) => {
+      const actions: GameActions = {
+        newGame: (configs, manualDeploy, room = null) => {
           const players: Player[] = configs.map((c, i) => ({ ...c, id: i, alive: true, cards: [] }))
           const n = players.length
           const board: Board = {}
@@ -342,8 +355,9 @@ export const useGame = create<GameState>()(
             pendingMove: null,
             stats: players.map(() => ({ conquered: 0, kills: 0, lost: 0 })),
             lastCard: null,
+            room,
           })
-          log('⚔ La guerre mondiale commence !')
+          log(msg('log.start'))
           if (manualDeploy) startDeploy(0)
           else startTurn(0, 1)
         },
@@ -359,7 +373,7 @@ export const useGame = create<GameState>()(
         clickTerritory: (id) => {
           const s = get()
           const me = s.players[s.current]
-          if (s.busy || me?.ai || s.winner !== null || s.pendingMove) return
+          if (s.busy || me?.ai || s.winner !== null || s.pendingMove || s.handoff !== null) return
           const t = s.board[id]
           if (s.phase === 'deploy' || s.phase === 'reinforce') {
             if (t.owner !== s.current) return
@@ -483,7 +497,7 @@ export const useGame = create<GameState>()(
             sfx.place()
           }
           if (pm.kind === 'fortify') {
-            log(`${s.players[s.current].name} déplace ${amount} armées vers ${name(pm.to)}`, s.players[s.current].color)
+            log(msg('log.fortify', { name: s.players[s.current].name, n: amount, terr: { terr: pm.to } }), s.players[s.current].color)
             get().endTurn()
           } else {
             const sel = canAttackFrom(board, pm.to) ? pm.to : canAttackFrom(board, pm.from) ? pm.from : null
@@ -518,13 +532,21 @@ export const useGame = create<GameState>()(
               const card = deck[0]
               deck = deck.slice(1)
               players = players.map((p, i) => (i === s.current ? { ...p, cards: [...p.cards, card] } : p))
-              set({ lastCard: players[s.current].ai ? null : { key: nextId(), card } })
+              set({ lastCard: players[s.current].ai ? null : { key: nextId(), card, seat: s.current } })
               sfx.card()
             }
           }
           set({ deck, discard, players, battle: null })
           const next = nextAlive(s.current)
           startTurn(next, next <= s.current ? s.turn + 1 : s.turn)
+        },
+
+        fortify: (from, to, n) => {
+          const s = get()
+          const b = s.board
+          if (s.phase !== 'fortify' || s.pendingMove || b[from]?.owner !== s.current || !reachable(b, from).has(to) || b[from].armies < 2) return
+          set({ selected: from, target: to, pendingMove: { kind: 'fortify', from, to, max: b[from].armies - 1 } })
+          get().confirmMove(n)
         },
 
         trade: (cardIds) => {
@@ -552,7 +574,7 @@ export const useGame = create<GameState>()(
             returnToAttack: s.returnToAttack || toAttack,
             cardsOpen: players[s.current].cards.length >= 5 && !me.ai,
           })
-          log(`${me.name} échange des cartes : +${value} armées${bonusCard ? ' (+2 bonus)' : ''}`, me.color)
+          log(msg(bonusCard ? 'log.tradeBonus' : 'log.trade', { name: me.name, n: value }), me.color)
           sfx.trade()
           return true
         },
@@ -564,6 +586,18 @@ export const useGame = create<GameState>()(
           set({ cardsOpen: open })
         },
 
+        revealTurn: () => set({ handoff: null }),
+
+        setAi: (seat) => {
+          const s = get()
+          const p = s.players[seat]
+          if (!p || p.ai) return
+          const players = s.players.map((x, i) => (i === seat ? { ...x, ai: true } : x))
+          const room = s.room && { ...s.room, seats: s.room.seats.map((x, i) => (i === seat ? { kind: 'bot' as const, token: null } : x)) }
+          set({ players, room, cardsOpen: seat === s.current ? false : s.cardsOpen, pendingMove: seat === s.current ? null : s.pendingMove })
+          log(msg('log.toAi', { name: p.name }), p.color)
+        },
+
         updateSettings: (patch) => {
           const settings = { ...get().settings, ...patch }
           setSoundEnabled(settings.sound)
@@ -572,12 +606,72 @@ export const useGame = create<GameState>()(
 
         removeFx: (id) => set((s) => ({ fx: s.fx.filter((f) => f.id !== id) })),
       }
+
+      // On a guest's device, moves are played by the host.
+      const remote: Partial<GameActions> = {}
+      for (const name of REMOTE_ACTIONS) {
+        const local = actions[name] as (...args: unknown[]) => unknown
+        ;(remote as Record<string, unknown>)[name] = (...args: unknown[]) => {
+          if (!forwarder) return local(...args)
+          forwarder(name, args)
+          return name === 'attack' || name === 'blitz' ? Promise.resolve(false) : name === 'trade' ? true : undefined
+        }
+      }
+
+      return {
+        screen: 'menu',
+        players: [],
+        board: {},
+        current: 0,
+        phase: 'reinforce',
+        turn: 1,
+        pool: 0,
+        deployLeft: [],
+        placeStep: 1,
+        selected: null,
+        target: null,
+        conquered: false,
+        returnToAttack: false,
+        deck: [],
+        discard: [],
+        trades: 0,
+        pendingMove: null,
+        battle: null,
+        busy: false,
+        log: [],
+        winner: null,
+        settings: DEFAULT_SETTINGS,
+        gameId: 0,
+        fx: [],
+        banner: null,
+        cardsOpen: false,
+        breakdown: null,
+        stats: [],
+        lastCard: null,
+        handoff: null,
+        room: null,
+        ...actions,
+        ...remote,
+      }
     },
     {
       name: 'risk-save-v1',
+      storage,
       partialize: (s) => {
         const { fx: _fx, banner: _b, battle: _bt, busy: _busy, lastCard: _lc, ...rest } = s
         return rest
+      },
+      // Saves made by older versions: new settings get their defaults, old log lines are dropped.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<GameData>
+        return {
+          ...current,
+          ...p,
+          settings: { ...current.settings, ...p.settings },
+          log: (p.log ?? []).filter((e) => e && 'msg' in e),
+          handoff: p.handoff ?? null,
+          room: p.room ?? null,
+        }
       },
       onRehydrateStorage: () => (state) => {
         if (state) setSoundEnabled(state.settings.sound)
@@ -587,3 +681,9 @@ export const useGame = create<GameState>()(
 )
 
 export const currentPlayer = (s: GameState) => s.players[s.current]
+
+/** Shared part of the state, sent to online guests. */
+export function snapshot(s: GameState): Snapshot {
+  const { settings: _s, screen: _sc, room: _r, ...rest } = s
+  return Object.fromEntries(Object.entries(rest).filter(([, v]) => typeof v !== 'function')) as Snapshot
+}

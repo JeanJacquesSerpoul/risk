@@ -4,6 +4,9 @@ import { GEO } from '../game/hexMap'
 import { ADJ, MAP_H, MAP_W, TERRITORIES } from '../game/mapData'
 import { canAttackFrom, reachable } from '../game/rules'
 import { type Fx, useGame } from '../game/store'
+import { canActNow, useCanAct, useUi } from '../game/ui'
+import { terrName } from '../i18n'
+import { langOf } from '../i18n/useT'
 
 type Mark = 'none' | 'source' | 'target' | 'selected' | 'targeted' | 'dim'
 
@@ -70,6 +73,8 @@ function Territory({ id, color, mark }: { id: string; color: string; mark: Mark 
       className="territory"
       onClick={(e) => {
         if (Math.hypot(e.clientX - pointerDown.x, e.clientY - pointerDown.y) > 8) return
+        if (!canActNow(useGame.getState())) return
+        useUi.setState({ advice: null, adviceOpen: false })
         click(id)
       }}
     >
@@ -133,7 +138,7 @@ function Label({ id, name }: { id: string; name: string }) {
   )
 }
 
-function arrowPath(from: string, to: string) {
+export function arrowPath(from: string, to: string) {
   const [x1, y1] = GEO.territories[from].center
   let [x2, y2] = GEO.territories[to].center
   // Wrap-around link (Alaska ↔ Kamchatka): aim off the map edge.
@@ -204,7 +209,9 @@ export function MapBoard({ width, height }: { width: number; height: number }) {
   const target = useGame((s) => s.target)
   const fx = useGame((s) => s.fx)
   const battle = useGame((s) => s.battle)
-  const human = !players[current]?.ai
+  const lang = useGame(langOf)
+  const human = useCanAct()
+  const advice = useUi((s) => s.advice)
 
   const marks = useMemo(() => {
     const m: Record<string, Mark> = {}
@@ -322,8 +329,26 @@ export function MapBoard({ width, height }: { width: number; height: number }) {
         />
       )}
 
+      {/* Advisor's suggestion */}
+      {advice && (advice.from || advice.to) && (
+        <g style={{ pointerEvents: 'none' }}>
+          {[advice.from, advice.to].map(
+            (id) =>
+              id && (
+                <g key={id}>
+                  <path d={GEO.territories[id].outline} fill="none" stroke="#ffd166" strokeWidth={7} opacity={0.6} filter="url(#softglow)" />
+                  <path className="march" d={GEO.territories[id].outline} fill="rgba(255,209,102,0.18)" stroke="#ffd166" strokeWidth={2.4} strokeDasharray="5 4" />
+                </g>
+              ),
+          )}
+          {advice.from && advice.to && (
+            <path className="arrow-flow" d={arrowPath(advice.from, advice.to)} fill="none" stroke="#ffd166" strokeWidth={3} strokeDasharray="6 6" strokeLinecap="round" markerEnd="url(#arrowhead)" />
+          )}
+        </g>
+      )}
+
       {TERRITORIES.map((t) => (
-        <Label key={t.id} id={t.id} name={t.name} />
+        <Label key={t.id} id={t.id} name={terrName(t.id, lang)} />
       ))}
       {TERRITORIES.map((t) => (
         <Badge

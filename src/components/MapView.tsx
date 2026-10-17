@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { type ReactZoomPanPinchRef, TransformComponent, TransformWrapper } from 'react-zoom-pan-pinch'
 import { GEO } from '../game/hexMap'
 import { useGame } from '../game/store'
+import { isLocalHuman } from '../game/ui'
 import { MapBoard, VIEW } from './MapBoard'
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v))
@@ -89,11 +90,11 @@ export function MapView() {
     }
   }, [fit, fitW, fitH, size.w, size.h])
 
-  // Camera follows AI battles happening off-screen.
+  // Camera follows other players' battles happening off-screen.
   useEffect(() => {
     const s = useGame.getState()
     const b = s.battle
-    if (!b || !s.players[b.attacker]?.ai || !tw.current || !fit) return
+    if (!b || isLocalHuman(s, b.attacker) || !tw.current || !fit) return
     const { scale, positionX, positionY } = tw.current.state
     const [ax, ay] = GEO.territories[b.from].center
     const [bx, by] = GEO.territories[b.to].center

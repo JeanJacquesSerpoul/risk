@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState } from 'react'
-import { TERRITORY_BY_ID } from '../game/mapData'
+import { useT } from '../i18n/useT'
 import { useGame } from '../game/store'
 
 const PIPS: Record<number, number[]> = {
@@ -46,7 +46,7 @@ function Face({ value, bg, pip, size }: { value: number; bg: string; pip: string
   )
 }
 
-function Die({ value, attacker, color, duration, delay, result }: { value: number; attacker: boolean; color: string; duration: number; delay: number; result: 'win' | 'lose' | null }) {
+export function Die({ value, attacker, color, duration, delay, result }: { value: number; attacker: boolean; color: string; duration: number; delay: number; result: 'win' | 'lose' | null }) {
   const size = typeof window !== 'undefined' && window.innerWidth < 640 ? 34 : 44
   const [fx, fy] = FRONT[value]
   const spinX = 360 * (2 + Math.floor(Math.random() * 2))
@@ -86,13 +86,18 @@ export function DiceTray() {
   const battle = useGame((s) => s.battle)
   const players = useGame((s) => s.players)
   const speed = useGame((s) => s.settings.speed)
+  const { t, terr } = useT()
   const [hidden, setHidden] = useState<number | null>(null)
 
+  // Keyed by value: online guests receive a new battle object with every update.
+  const key = battle?.key
+  const settled = !!battle && !battle.rolling
+  const conquered = !!battle?.conquered
   useEffect(() => {
-    if (!battle || battle.rolling) return
-    const t = setTimeout(() => setHidden(battle.key), (battle.conquered ? 2200 : 1700) / speed)
+    if (key === undefined || !settled) return
+    const t = setTimeout(() => setHidden(key), (conquered ? 2200 : 1700) / speed)
     return () => clearTimeout(t)
-  }, [battle, speed])
+  }, [key, settled, conquered, speed])
 
   const show = battle && hidden !== battle.key
   const att = battle ? players[battle.attacker] : null
@@ -117,7 +122,7 @@ export function DiceTray() {
           <div className="flex items-center gap-3 sm:gap-6">
             <div className="flex flex-col items-center gap-1.5">
               <div className="max-w-[110px] truncate text-[11px] font-bold uppercase tracking-wide sm:max-w-none sm:text-xs" style={{ color: att.color }}>
-                ⚔ {TERRITORY_BY_ID[battle.from].name}
+                ⚔ {terr(battle.from)}
               </div>
               <div className="flex gap-1.5 sm:gap-2.5">
                 {battle.att.map((v, i) => (
@@ -132,7 +137,7 @@ export function DiceTray() {
                 animate={{ scale: 1, rotate: 0 }}
                 className="font-display text-sm font-black text-fg/70 sm:text-lg"
               >
-                VS
+                {t('dice.vs')}
               </motion.div>
               {!battle.rolling && (
                 <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="mt-1 flex gap-2 font-display text-[10px] font-bold sm:text-xs">
@@ -144,7 +149,7 @@ export function DiceTray() {
             </div>
             <div className="flex flex-col items-center gap-1.5">
               <div className="max-w-[110px] truncate text-[11px] font-bold uppercase tracking-wide sm:max-w-none sm:text-xs" style={{ color: def.color }}>
-                🛡 {TERRITORY_BY_ID[battle.to].name}
+                🛡 {terr(battle.to)}
               </div>
               <div className="flex gap-1.5 sm:gap-2.5">
                 {battle.def.map((v, i) => (
@@ -165,7 +170,7 @@ export function DiceTray() {
                   className="rounded-lg border-4 px-4 py-1 font-display text-xl font-black tracking-widest sm:text-3xl"
                   style={{ color: att.color, borderColor: att.color, background: 'rgba(2,6,23,0.85)', textShadow: `0 0 18px ${att.color}`, boxShadow: `0 0 30px ${att.color}` }}
                 >
-                  CONQUIS !
+                  {t('dice.conquered')}
                 </div>
               </motion.div>
             )}

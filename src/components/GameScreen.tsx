@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { runAI } from '../game/ai'
 import { useGame } from '../game/store'
+import { canActNow, useUi } from '../game/ui'
 import { ActionPanel } from './ActionPanel'
+import { AdvisorSheet } from './AdvisorSheet'
 import { CardsPanel, NewCardToast } from './CardsPanel'
 import { DiceTray } from './DiceTray'
 import { MapView } from './MapView'
 import { LogTicker, MoveDialog, PauseMenu, TurnBanner, VictoryScreen } from './Overlays'
+import { PassDevice } from './PassDevice'
 import { TopBar } from './TopBar'
 
 export function GameScreen() {
@@ -15,17 +18,21 @@ export function GameScreen() {
   const phase = useGame((s) => s.phase)
   const turn = useGame((s) => s.turn)
   const busy = useGame((s) => s.busy)
+  const ai = useGame((s) => s.players[s.current]?.ai)
 
   // Drive AI players.
   useEffect(() => {
     void runAI()
-  }, [gameId, current, phase, turn, busy])
+  }, [gameId, current, phase, turn, busy, ai])
+
+  // An advice is only valid for the situation it was given in.
+  useEffect(() => useUi.setState({ advice: null, adviceOpen: false }), [current, phase, turn])
 
   // Keyboard shortcuts (desktop).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = useGame.getState()
-      if (s.players[s.current]?.ai) return
+      if (!canActNow(s) || useUi.getState().dialog) return
       if (e.key === 'Escape') {
         if (s.pendingMove?.kind === 'fortify') s.cancelMove()
         else s.select(null)
@@ -49,6 +56,8 @@ export function GameScreen() {
       <MoveDialog />
       <CardsPanel />
       <NewCardToast />
+      <AdvisorSheet />
+      <PassDevice />
       <VictoryScreen />
       <PauseMenu open={paused} onClose={() => setPaused(false)} />
     </div>

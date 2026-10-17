@@ -26,5 +26,4 @@ export function useApplyTheme() {
   return theme
 }
 
-export const THEME_LABEL: Record<ThemeMode, string> = { system: 'Auto', light: 'Clair', dark: 'Sombre' }
 export const nextTheme = (m: ThemeMode): ThemeMode => (m === 'system' ? 'light' : m === 'light' ? 'dark' : 'system')

@@ -1,16 +1,27 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { Bot, Minus, Play, Plus, RotateCcw, User } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Bot, Clapperboard, Globe, Minus, Play, Plus, RotateCcw, Settings, User } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { GEO } from '../game/hexMap'
 import { CONTINENTS, MAP_H, MAP_W, TERRITORIES } from '../game/mapData'
-import { type Difficulty, PLAYER_COLORS, PLAYER_NAMES } from '../game/rules'
+import { type Difficulty, PLAYER_COLORS } from '../game/rules'
 import { type PlayerConfig, useGame } from '../game/store'
-import { THEME_LABEL, useResolvedTheme } from '../game/theme'
+import { useResolvedTheme } from '../game/theme'
+import { openDialog, useUi } from '../game/ui'
+import { type Lang, LANG_LABEL, LANGS, PLAYER_NAMES } from '../i18n'
+import { langOf, useT } from '../i18n/useT'
+import { reopenRoom } from '../net/session'
+import { OnlineDialog } from './Online'
 
-const DIFF_LABEL: Record<Difficulty, string> = { easy: 'Recrue', normal: 'Général', hard: 'Maréchal' }
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard']
 
-function BackgroundMap() {
+/** Default names follow the language, as long as the player did not rename them. */
+function localizeName(name: string, from: Lang, to: Lang) {
+  const i = PLAYER_NAMES[from].indexOf(name)
+  if (i >= 0) return PLAYER_NAMES[to][i]
+  return name === (from === 'fr' ? 'Vous' : 'You') ? (to === 'fr' ? 'Vous' : 'You') : name
+}
+
+export function BackgroundMap() {
   const particles = useMemo(
     () => Array.from({ length: 40 }, (_, i) => ({ id: i, x: Math.random() * 100, y: Math.random() * 100, d: 6 + Math.random() * 10, s: 1 + Math.random() * 2 })),
     [],
@@ -68,6 +79,7 @@ function BackgroundMap() {
 
 function Title() {
   const dark = useResolvedTheme() === 'dark'
+  const { t } = useT()
   return (
     <div className="relative text-center">
       <div className="flex justify-center">
@@ -96,7 +108,7 @@ function Title() {
         animate={{ opacity: 1, letterSpacing: '0.6em' }}
         transition={{ delay: 0.8, duration: 1 }}
       >
-        CONQUÊTE DU MONDE
+        {t('brand.subtitle')}
       </motion.div>
     </div>
   )
@@ -106,14 +118,26 @@ export function MenuScreen() {
   const newGame = useGame((s) => s.newGame)
   const resume = useGame((s) => s.resume)
   const hasSave = useGame((s) => s.players.length > 0 && s.winner === null)
+  const savedRoom = useGame((s) => s.room?.code)
   const theme = useGame((s) => s.settings.theme ?? 'system')
   const updateSettings = useGame((s) => s.updateSettings)
+  const dialog = useUi((s) => s.dialog)
+  const { t, lang } = useT()
   const [manual, setManual] = useState(false)
-  const [players, setPlayers] = useState<PlayerConfig[]>([
-    { name: 'Vous', color: PLAYER_COLORS[1], ai: false, difficulty: 'normal' },
-    { name: PLAYER_NAMES[0], color: PLAYER_COLORS[0], ai: true, difficulty: 'normal' },
-    { name: PLAYER_NAMES[2], color: PLAYER_COLORS[2], ai: true, difficulty: 'normal' },
-  ])
+  const [players, setPlayers] = useState<PlayerConfig[]>(() => {
+    const names = PLAYER_NAMES[langOf(useGame.getState())]
+    return [
+      { name: t('menu.you'), color: PLAYER_COLORS[1], ai: false, difficulty: 'normal' },
+      { name: names[0], color: PLAYER_COLORS[0], ai: true, difficulty: 'normal' },
+      { name: names[2], color: PLAYER_COLORS[2], ai: true, difficulty: 'normal' },
+    ]
+  })
+  const [nameLang, setNameLang] = useState(lang)
+  useEffect(() => {
+    if (lang === nameLang) return
+    setPlayers((ps) => ps.map((p) => ({ ...p, name: localizeName(p.name, nameLang, lang) })))
+    setNameLang(lang)
+  }, [lang, nameLang])
 
   const patch = (i: number, p: Partial<PlayerConfig>) => setPlayers((ps) => ps.map((x, j) => (j === i ? { ...x, ...p } : x)))
   const cycleColor = (i: number) => {
@@ -124,10 +148,11 @@ export function MenuScreen() {
       if (!used.has(c)) return patch(i, { color: c })
     }
   }
+  const named = players.map((p, i) => ({ ...p, name: p.name.trim() || t('menu.player', { n: i + 1 }) }))
   const add = () => {
     if (players.length >= 6) return
     const color = PLAYER_COLORS.find((c) => !players.some((p) => p.color === c))!
-    const name = PLAYER_NAMES.find((n) => !players.some((p) => p.name === n)) ?? `Joueur ${players.length + 1}`
+    const name = PLAYER_NAMES[lang].find((n) => !players.some((p) => p.name === n)) ?? t('menu.player', { n: players.length + 1 })
     setPlayers([...players, { name, color, ai: true, difficulty: 'normal' }])
   }
 
@@ -143,7 +168,7 @@ export function MenuScreen() {
           transition={{ delay: 1, type: 'spring', stiffness: 120, damping: 18 }}
         >
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display text-xs font-bold tracking-[0.3em] text-fg/70">GÉNÉRAUX ({players.length})</h2>
+            <h2 className="font-display text-xs font-bold tracking-[0.3em] text-fg/70">{t('menu.generals', { n: players.length })}</h2>
             <div className="flex gap-1">
               <button className="btn btn-ghost !p-2" disabled={players.length <= 2} onClick={() => setPlayers(players.slice(0, -1))}>
                 <Minus size={14} />
@@ -169,7 +194,7 @@ export function MenuScreen() {
                     onClick={() => cycleColor(i)}
                     className="h-9 w-9 shrink-0 rounded-xl transition active:scale-90"
                     style={{ background: p.color, boxShadow: `0 0 16px ${p.color}` }}
-                    title="Changer de couleur"
+                    title={t('menu.changeColor')}
                   />
                   <input
                     value={p.name}
@@ -179,11 +204,11 @@ export function MenuScreen() {
                   />
                   <button className={`chip flex items-center gap-1`} data-on={!p.ai} onClick={() => patch(i, { ai: !p.ai })}>
                     {p.ai ? <Bot size={13} /> : <User size={13} />}
-                    <span className="hidden sm:inline">{p.ai ? 'IA' : 'HUMAIN'}</span>
+                    <span className="hidden sm:inline">{p.ai ? t('menu.ai') : t('menu.human')}</span>
                   </button>
                   {p.ai && (
                     <button className="chip w-[74px]" onClick={() => patch(i, { difficulty: DIFFS[(DIFFS.indexOf(p.difficulty) + 1) % 3] })}>
-                      {DIFF_LABEL[p.difficulty]}
+                      {t(`diff.${p.difficulty}`)}
                     </button>
                   )}
                 </motion.div>
@@ -191,46 +216,68 @@ export function MenuScreen() {
             </AnimatePresence>
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="text-fg/60">Déploiement initial</span>
+            <span className="text-fg/60">{t('menu.deploy')}</span>
             <div className="flex gap-1">
               <button className="chip" data-on={!manual} onClick={() => setManual(false)}>
-                AUTOMATIQUE
+                {t('menu.deployAuto')}
               </button>
               <button className="chip" data-on={manual} onClick={() => setManual(true)}>
-                MANUEL
+                {t('menu.deployManual')}
               </button>
             </div>
           </div>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="text-fg/60">Thème</span>
+            <span className="text-fg/60">{t('settings.theme')}</span>
             <div className="flex gap-1">
               {(['system', 'light', 'dark'] as const).map((m) => (
                 <button key={m} className="chip" data-on={theme === m} onClick={() => updateSettings({ theme: m })}>
-                  {THEME_LABEL[m].toUpperCase()}
+                  {t(`theme.${m}`).toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <span className="text-fg/60">{t('settings.language')}</span>
+            <div className="flex gap-1">
+              {LANGS.map((l) => (
+                <button key={l} className="chip" data-on={lang === l} onClick={() => updateSettings({ lang: l })}>
+                  {LANG_LABEL[l].toUpperCase()}
                 </button>
               ))}
             </div>
           </div>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             {hasSave && (
-              <button className="btn btn-ghost sm:flex-1" onClick={resume}>
-                <RotateCcw size={15} /> Reprendre la partie
+              <button className="btn btn-ghost sm:flex-1" onClick={() => (savedRoom ? void reopenRoom() : resume())}>
+                <RotateCcw size={15} /> {savedRoom ? t('menu.resumeOnline', { code: savedRoom }) : t('menu.resume')}
               </button>
             )}
             <motion.button
               className="btn btn-primary !py-3 !text-sm sm:flex-[2]"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={() => newGame(players.map((p, i) => ({ ...p, name: p.name.trim() || `Joueur ${i + 1}` })), manual)}
+              onClick={() => newGame(named, manual)}
             >
-              <Play size={16} fill="currentColor" /> Lancer la conquête
+              <Play size={16} fill="currentColor" /> {t('menu.start')}
             </motion.button>
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <button className="btn btn-ghost !px-2" onClick={() => openDialog('intro')}>
+              <Clapperboard size={14} /> {t('menu.video')}
+            </button>
+            <button className="btn btn-ghost !px-2" onClick={() => openDialog('online')}>
+              <Globe size={14} /> {t('menu.online')}
+            </button>
+            <button className="btn btn-ghost !px-2" onClick={() => openDialog('settings')}>
+              <Settings size={14} /> {t('menu.settings')}
+            </button>
           </div>
         </motion.div>
         <motion.p className="max-w-md text-center text-xs text-fg/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.6 }}>
-          Plusieurs humains peuvent jouer à tour de rôle sur le même appareil. Partie sauvegardée automatiquement.
+          {t('menu.footer')}
         </motion.p>
       </div>
+      <AnimatePresence>{dialog === 'online' && <OnlineDialog players={named} manual={manual} />}</AnimatePresence>
     </div>
   )
 }
