@@ -8,6 +8,7 @@ import { useT } from '../i18n/useT'
 import { useNet } from '../net/netStore'
 import { leaveRoom } from '../net/session'
 import { InsigniaIcon } from './Insignia'
+import { ForcesPanel } from './StatsDialog'
 import { QuickSettings } from './TopBar'
 
 export function MoveDialog() {
@@ -277,7 +278,7 @@ export function VictoryScreen() {
   return (
     <motion.div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--scrim)] p-4 backdrop-blur-md" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
       <motion.div
-        className="glass relative w-full max-w-lg overflow-hidden rounded-3xl p-6 text-center"
+        className="glass relative max-h-[94dvh] w-full max-w-2xl overflow-y-auto overflow-x-hidden rounded-3xl p-5 text-center sm:p-6"
         style={{ borderColor: w.color, boxShadow: `0 0 80px ${w.color}66` }}
         initial={{ scale: 0.6, y: 40 }}
         animate={{ scale: 1, y: 0 }}
@@ -320,6 +321,10 @@ export function VictoryScreen() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="relative mt-5">
+          <h3 className="mb-2 text-left font-display text-[10px] font-bold tracking-[0.25em] text-fg/55">{t('victory.forces').toUpperCase()}</h3>
+          <ForcesPanel height={200} />
         </div>
         <div className="relative mt-6 flex gap-2">
           <button

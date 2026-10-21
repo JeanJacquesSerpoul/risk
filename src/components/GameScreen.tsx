@@ -1,3 +1,4 @@
+import { AnimatePresence } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { runAI } from '../game/ai'
 import { useGame } from '../game/store'
@@ -9,6 +10,7 @@ import { DiceTray } from './DiceTray'
 import { MapView } from './MapView'
 import { LogTicker, MoveDialog, PauseMenu, TurnBanner, VictoryScreen } from './Overlays'
 import { PassDevice } from './PassDevice'
+import { StatsDialog } from './StatsDialog'
 import { TerritoryTooltip } from './TerritoryTooltip'
 import { TopBar } from './TopBar'
 
@@ -20,6 +22,7 @@ export function GameScreen() {
   const turn = useGame((s) => s.turn)
   const busy = useGame((s) => s.busy)
   const ai = useGame((s) => s.players[s.current]?.ai)
+  const stats = useUi((s) => s.dialog === 'stats')
 
   // Drive AI players.
   useEffect(() => {
@@ -62,6 +65,7 @@ export function GameScreen() {
       <PassDevice />
       <VictoryScreen />
       <PauseMenu open={paused} onClose={() => setPaused(false)} />
+      <AnimatePresence>{stats && <StatsDialog key="stats" />}</AnimatePresence>
     </div>
   )
 }

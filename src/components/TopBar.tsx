@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import type { ReactNode } from 'react'
-import { Bot, GalleryVerticalEnd, Gauge, Globe, Hexagon, Layers, Menu, Moon, Settings, Shield, Sun, SunMoon, Volume2, VolumeX } from 'lucide-react'
+import { Bot, ChartLine, GalleryVerticalEnd, Gauge, Globe, Hexagon, Layers, Menu, Moon, Settings, Shield, Sun, SunMoon, Volume2, VolumeX } from 'lucide-react'
 import { CONTINENTS, type ContinentId, TERRITORY_IDS } from '../game/mapData'
 import { continentOwner } from '../game/rules'
 import { useGame } from '../game/store'
@@ -88,6 +88,9 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
           <div className="hidden items-center gap-1 sm:flex">
             <QuickSettings />
           </div>
+          <button className="btn btn-ghost !px-2 !py-1.5" title={t('stats.open')} aria-label={t('stats.open')} onClick={() => openDialog('stats')}>
+            <ChartLine size={15} />
+          </button>
           <button className="btn btn-ghost !px-2 !py-1.5" title={t('top.menu')} aria-label={t('top.menu')} onClick={onMenu}>
             <Menu size={15} />
           </button>

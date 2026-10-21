@@ -3,7 +3,7 @@ import { useNet } from '../net/netStore'
 import type { Advice } from './advisor'
 import { type GameState, useGame } from './store'
 
-export type Dialog = 'settings' | 'online' | 'intro' | null
+export type Dialog = 'settings' | 'online' | 'intro' | 'stats' | null
 
 /** Interface state of this device only (never saved nor shared). */
 interface UiState {

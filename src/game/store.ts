@@ -104,6 +104,32 @@ export interface PlayerStats {
   lost: number
 }
 
+/** Forces of every player (by seat) when a turn starts, and once more when the game is won. */
+export interface HistoryPoint {
+  turn: number
+  /** Whose turn was starting (or the winner, for the final point). */
+  seat: number
+  armies: number[]
+  territories: number[]
+  /** The point taken when the game was won. */
+  final?: boolean
+}
+
+/** Longest history kept: a few hundred turns is already a very long game. */
+const HISTORY_MAX = 600
+
+export function sampleForces(board: Board, seats: number, turn: number, seat: number): HistoryPoint {
+  const armies = Array<number>(seats).fill(0)
+  const territories = Array<number>(seats).fill(0)
+  for (const id of TERRITORY_IDS) {
+    const t = board[id]
+    if (!t || t.owner < 0 || t.owner >= seats) continue
+    armies[t.owner] += t.armies
+    territories[t.owner]++
+  }
+  return { turn, seat, armies, territories }
+}
+
 export interface GameData {
   screen: 'menu' | 'game'
   players: Player[]
@@ -126,6 +152,7 @@ export interface GameData {
   busy: boolean
   log: LogEntry[]
   winner: number | null
+  history: HistoryPoint[]
   settings: Settings
   gameId: number
   fx: Fx[]
@@ -209,10 +236,17 @@ export const useGame = create<GameState>()(
         return s.settings.passDevice !== false && !s.room && !s.players[p].ai && s.players.filter((x) => !x.ai && x.alive).length >= 2
       }
 
+      const record = (turn: number, seat: number, final = false) =>
+        set((s) => {
+          const point = sampleForces(s.board, s.players.length, turn, seat)
+          return { history: [...s.history.slice(1 - HISTORY_MAX), final ? { ...point, final } : point] }
+        })
+
       const startTurn = (p: number, turn: number) => {
         const s = get()
         const breakdown = reinforcements(s.board, p)
         const player = s.players[p]
+        record(turn, p)
         set({
           current: p,
           turn,
@@ -282,6 +316,7 @@ export const useGame = create<GameState>()(
           banner(msg('banner.eliminated', { name: loser.name }), loser.color, msg('banner.by', { name: attacker.name }))
           if (players.filter((p) => p.alive).length === 1) {
             set({ winner: s.current, pendingMove: null })
+            record(s.turn, s.current, true)
             setTimeout(() => sfx.victory(), 600)
             return
           }
@@ -374,6 +409,7 @@ export const useGame = create<GameState>()(
             discard: [],
             trades: 0,
             winner: null,
+            history: [],
             log: [],
             fx: [],
             gameId: get().gameId + 1,
@@ -674,6 +710,7 @@ export const useGame = create<GameState>()(
         banner: null,
         cardsOpen: false,
         breakdown: null,
+        history: [],
         stats: [],
         lastCard: null,
         handoff: null,
@@ -700,6 +737,7 @@ export const useGame = create<GameState>()(
           settings: { ...current.settings, ...p.settings },
           log: (p.log ?? []).filter((e) => e && 'msg' in e),
           handoff: p.handoff ?? null,
+          history: p.history ?? [],
           room: p.room ?? null,
         }
       },

@@ -134,6 +134,23 @@ describe('store', () => {
     expect(useGame.getState().placeStep).not.toBe(5)
   })
 
+  it('records every player’s forces when a turn starts', () => {
+    useGame.getState().newGame(
+      [
+        { name: 'A', color: '#f00', ai: false, difficulty: 'normal' },
+        { name: 'B', color: '#00f', ai: true, difficulty: 'normal' },
+      ],
+      false,
+    )
+    const s = useGame.getState()
+    expect(s.history).toHaveLength(1)
+    const [first] = s.history
+    expect(first).toMatchObject({ turn: 1, seat: 0 })
+    expect(first.territories.reduce((a, b) => a + b, 0)).toBe(TERRITORY_IDS.length)
+    expect(first.armies).toEqual([0, 1].map((p) => TERRITORY_IDS.filter((id) => s.board[id].owner === p).reduce((n, id) => n + s.board[id].armies, 0)))
+    expect((snapshot(s) as unknown as Record<string, unknown>).history).toEqual(s.history)
+  })
+
   it('shares the game but not the device settings', () => {
     const snap = snapshot(useGame.getState()) as unknown as Record<string, unknown>
     expect(snap.board).toBeDefined()
