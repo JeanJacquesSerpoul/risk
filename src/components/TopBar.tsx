@@ -1,5 +1,6 @@
 import { motion } from 'motion/react'
-import { Bot, Gauge, Globe, Layers, Menu, Moon, Settings, Sun, SunMoon, Volume2, VolumeX } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Bot, GalleryVerticalEnd, Gauge, Globe, Hexagon, Layers, Menu, Moon, Settings, Shield, Sun, SunMoon, Volume2, VolumeX } from 'lucide-react'
 import { CONTINENTS, type ContinentId, TERRITORY_IDS } from '../game/mapData'
 import { continentOwner } from '../game/rules'
 import { useGame } from '../game/store'
@@ -14,8 +15,6 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
   const board = useGame((s) => s.board)
   const current = useGame((s) => s.current)
   const turn = useGame((s) => s.turn)
-  const settings = useGame((s) => s.settings)
-  const update = useGame((s) => s.updateSettings)
   const net = useNet()
   const { t } = useT()
 
@@ -26,7 +25,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
 
   return (
     <div className="safe-top pointer-events-none absolute inset-x-0 top-0 z-20 px-2 sm:px-3">
-      <div className="glass pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-1.5 sm:gap-3 sm:px-3">
+      <div className="glass pointer-events-auto relative flex items-center gap-2 rounded-2xl px-2 pb-2.5 pt-1.5 sm:gap-3 sm:px-3">
         <div className="hidden shrink-0 flex-col leading-none sm:flex">
           <span className="font-display text-lg font-black tracking-[0.25em] text-neon text-glow">RISK</span>
           <span className="font-display text-[9px] tracking-widest text-fg/50">
@@ -47,15 +46,16 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
           <span className="font-display text-sm font-bold text-neon">{turn}</span>
         </div>
 
-        <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+        <div className="no-scrollbar flex min-w-0 flex-1 gap-1 overflow-x-auto sm:gap-1.5">
           {players.map((p, i) => {
             const active = i === current
             return (
               <motion.div
                 key={p.id}
                 layout
-                className="relative flex shrink-0 items-center gap-1.5 rounded-xl px-2 py-1"
+                className="relative flex shrink-0 items-center gap-1.5 rounded-xl px-1.5 py-1 sm:px-2"
                 style={{ opacity: p.alive ? 1 : 0.35 }}
+                title={p.name}
               >
                 {active && (
                   <motion.div
@@ -67,20 +67,15 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                 )}
                 <InsigniaIcon seat={i} color={p.color} size={13} glow />
                 <div className="relative flex flex-col leading-none">
-                  <span className={`flex items-center gap-1 text-xs font-bold ${p.alive ? '' : 'line-through'} ${active ? '' : 'hidden md:flex'}`}>
+                  <span className={`items-center gap-1 text-xs font-bold ${p.alive ? '' : 'line-through'} ${active ? 'flex' : 'hidden md:flex'}`}>
                     {p.name}
                     {p.ai && <Bot size={11} className="opacity-60" />}
                   </span>
-                  <span className="font-display text-[9px] text-fg/60">
-                    {stats[i].territories}
-                    <span className="opacity-50">{t('abbr.territories')}</span> · {stats[i].armies}
-                    <span className="opacity-50">{t('abbr.armies')}</span>
+                  <span className={`flex items-center gap-1.5 font-display text-[10px] text-fg/75 ${active ? 'mt-0.5' : 'md:mt-0.5'}`}>
+                    <Stat icon={<Hexagon size={9} />} n={stats[i].territories} title={t('top.territories', { n: stats[i].territories })} />
+                    <Stat icon={<Shield size={9} />} n={stats[i].armies} title={t('tip.armies', { n: stats[i].armies })} className={active ? '' : 'hidden sm:flex'} />
                     {p.cards.length > 0 && (
-                      <>
-                        {' '}
-                        · {p.cards.length}
-                        <span className="opacity-50">{t('abbr.cards')}</span>
-                      </>
+                      <Stat icon={<GalleryVerticalEnd size={9} />} n={p.cards.length} title={t('top.cards', { n: p.cards.length })} className={active ? '' : 'hidden sm:flex'} />
                     )}
                   </span>
                 </div>
@@ -90,34 +85,88 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          <button
-            className="btn btn-ghost !px-2 !py-1.5"
-            title={t('top.speed')}
-            onClick={() => update({ speed: settings.speed === 1 ? 2 : settings.speed === 2 ? 4 : 1 })}
-          >
-            <Gauge size={15} />
-            <span className="text-[10px]">×{settings.speed}</span>
-          </button>
-          <button
-            className="btn btn-ghost !px-2 !py-1.5"
-            title={t('top.theme', { mode: t(`theme.${settings.theme ?? 'system'}`) })}
-            onClick={() => update({ theme: nextTheme(settings.theme ?? 'system') })}
-          >
-            {settings.theme === 'light' ? <Sun size={15} /> : settings.theme === 'dark' ? <Moon size={15} /> : <SunMoon size={15} />}
-          </button>
-          <button className="btn btn-ghost !px-2 !py-1.5" title={t('top.sound')} onClick={() => update({ sound: !settings.sound })}>
-            {settings.sound ? <Volume2 size={15} /> : <VolumeX size={15} />}
-          </button>
-          <button className="btn btn-ghost !px-2 !py-1.5" title={t('top.settings')} onClick={() => openDialog('settings')}>
-            <Settings size={15} />
-          </button>
-          <button className="btn btn-ghost !px-2 !py-1.5" title={t('top.menu')} onClick={onMenu}>
+          <div className="hidden items-center gap-1 sm:flex">
+            <QuickSettings />
+          </div>
+          <button className="btn btn-ghost !px-2 !py-1.5" title={t('top.menu')} aria-label={t('top.menu')} onClick={onMenu}>
             <Menu size={15} />
           </button>
         </div>
+        <DominationBar />
       </div>
       <ContinentLegend />
     </div>
+  )
+}
+
+function Stat({ icon, n, title, className = '' }: { icon: ReactNode; n: number; title: string; className?: string }) {
+  return (
+    <span className={`flex items-center gap-0.5 ${className}`} title={title} aria-label={title}>
+      <span className="opacity-60">{icon}</span>
+      {n}
+    </span>
+  )
+}
+
+/** Share of the 42 territories held by each player: the balance of power at a glance. */
+function DominationBar() {
+  const board = useGame((s) => s.board)
+  const players = useGame((s) => s.players)
+  const { t } = useT()
+  const total = TERRITORY_IDS.length
+  return (
+    <div className="absolute inset-x-3 bottom-1 flex h-[3px] gap-px overflow-hidden rounded-full bg-fg/10">
+      {players.map((p) => {
+        const n = TERRITORY_IDS.filter((id) => board[id]?.owner === p.id).length
+        if (!n) return null
+        return (
+          <motion.div
+            key={p.id}
+            className="h-full"
+            style={{ background: p.color }}
+            initial={false}
+            animate={{ width: `${(n / total) * 100}%` }}
+            transition={{ type: 'spring', stiffness: 200, damping: 30 }}
+            title={t('top.share', { name: p.name, p: Math.round((n / total) * 100) })}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+/** Speed, theme, sound and settings: in the top bar on wide screens, in the pause menu everywhere. */
+export function QuickSettings({ large = false, onSettings }: { large?: boolean; onSettings?: () => void }) {
+  const settings = useGame((s) => s.settings)
+  const update = useGame((s) => s.updateSettings)
+  const { t } = useT()
+  const cls = large ? 'btn btn-ghost flex-1 !py-2.5' : 'btn btn-ghost !px-2 !py-1.5'
+  const size = large ? 17 : 15
+  const themeTitle = t('top.theme', { mode: t(`theme.${settings.theme ?? 'system'}`) })
+  return (
+    <>
+      <button className={cls} title={t('top.speed')} aria-label={t('top.speed')} onClick={() => update({ speed: settings.speed === 1 ? 2 : settings.speed === 2 ? 4 : 1 })}>
+        <Gauge size={size} />
+        <span className="text-[10px]">×{settings.speed}</span>
+      </button>
+      <button className={cls} title={themeTitle} aria-label={themeTitle} onClick={() => update({ theme: nextTheme(settings.theme ?? 'system') })}>
+        {settings.theme === 'light' ? <Sun size={size} /> : settings.theme === 'dark' ? <Moon size={size} /> : <SunMoon size={size} />}
+      </button>
+      <button className={cls} title={t('top.sound')} aria-label={t('top.sound')} onClick={() => update({ sound: !settings.sound })}>
+        {settings.sound ? <Volume2 size={size} /> : <VolumeX size={size} />}
+      </button>
+      <button
+        className={cls}
+        title={t('top.settings')}
+        aria-label={t('top.settings')}
+        onClick={() => {
+          onSettings?.()
+          openDialog('settings')
+        }}
+      >
+        <Settings size={size} />
+      </button>
+    </>
   )
 }
 

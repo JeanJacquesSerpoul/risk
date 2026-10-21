@@ -7,6 +7,7 @@ import { useGame } from '../game/store'
 import { useT } from '../i18n/useT'
 import { useNet } from '../net/netStore'
 import { leaveRoom } from '../net/session'
+import { QuickSettings } from './TopBar'
 
 export function MoveDialog() {
   const pm = useGame((s) => s.pendingMove)
@@ -301,6 +302,9 @@ export function PauseMenu({ open, onClose }: { open: boolean; onClose: () => voi
               >
                 <Home size={14} /> {role === 'guest' ? t('lobby.leave') : t('pause.menu')}
               </button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <QuickSettings large onSettings={onClose} />
             </div>
             <div className="mt-5 space-y-1 text-xs text-fg/50">
               <p>{t('pause.tip1')}</p>
