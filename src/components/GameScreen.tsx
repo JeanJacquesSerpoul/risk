@@ -9,6 +9,7 @@ import { DiceTray } from './DiceTray'
 import { MapView } from './MapView'
 import { LogTicker, MoveDialog, PauseMenu, TurnBanner, VictoryScreen } from './Overlays'
 import { PassDevice } from './PassDevice'
+import { TerritoryTooltip } from './TerritoryTooltip'
 import { TopBar } from './TopBar'
 
 export function GameScreen() {
@@ -48,6 +49,7 @@ export function GameScreen() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-ink" style={{ height: '100dvh' }}>
       <MapView />
+      <TerritoryTooltip />
       <TopBar onMenu={() => setPaused(true)} />
       <LogTicker />
       <DiceTray />

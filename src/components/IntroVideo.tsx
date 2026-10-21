@@ -36,7 +36,7 @@ function markSeen() {
   }
 }
 
-const BLUE = '#2fa8ff'
+const BLUE = '#3d7bff'
 const RED = '#ff3b5c'
 const GREEN = '#2ee59d'
 const GOLD = '#ffc531'

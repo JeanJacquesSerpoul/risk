@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { memo, useMemo } from 'react'
 import { GEO } from '../game/hexMap'
-import { ADJ, MAP_H, MAP_W, TERRITORIES } from '../game/mapData'
+import { insigniaOf, insigniaPath } from '../game/insignia'
+import { ADJ, CONTINENTS, type ContinentId, MAP_H, MAP_W, TERRITORIES } from '../game/mapData'
 import { canAttackFrom, reachable } from '../game/rules'
 import { type Fx, useGame } from '../game/store'
 import { canActNow, useCanAct, useUi } from '../game/ui'
-import { terrName } from '../i18n'
+import { contName, terrName } from '../i18n'
 import { langOf } from '../i18n/useT'
 
 type Mark = 'none' | 'source' | 'target' | 'selected' | 'targeted' | 'dim'
@@ -15,6 +16,16 @@ export const pointerDown = { x: 0, y: 0 }
 
 /** Visible world box: the map plus margins so the HUD never hides territories. */
 export const VIEW = { x: -15, y: -62, w: MAP_W + 30, h: MAP_H + 62 + 105 }
+
+/** Where each continent's name is written: in the sea next to it, clear of territories and badges. */
+const CONTINENT_LABELS: { id: ContinentId; x: number; y: number; anchor: 'start' | 'middle' | 'end' }[] = [
+  { id: 'na', x: 90, y: 300, anchor: 'middle' },
+  { id: 'sa', x: 228, y: 480, anchor: 'end' },
+  { id: 'eu', x: 405, y: 228, anchor: 'end' },
+  { id: 'af', x: 455, y: 485, anchor: 'end' },
+  { id: 'as', x: 930, y: 300, anchor: 'middle' },
+  { id: 'au', x: 862, y: 560, anchor: 'middle' },
+]
 
 const StaticLayers = memo(function StaticLayers() {
   return (
@@ -71,6 +82,12 @@ function Territory({ id, color, mark }: { id: string; color: string; mark: Mark 
   return (
     <g
       className="territory"
+      onPointerEnter={(e) => {
+        if (e.pointerType === 'mouse') useUi.setState({ hover: id })
+      }}
+      onPointerLeave={() => {
+        if (useUi.getState().hover === id) useUi.setState({ hover: null })
+      }}
       onClick={(e) => {
         if (Math.hypot(e.clientX - pointerDown.x, e.clientY - pointerDown.y) > 8) return
         if (!canActNow(useGame.getState())) return
@@ -82,7 +99,11 @@ function Territory({ id, color, mark }: { id: string; color: string; mark: Mark 
         className="tiles"
         d={g.tiles}
         fill={color}
-        style={{ transition: 'fill 0.6s, opacity 0.3s', opacity: dim ? 0.45 : mark === 'selected' ? 1 : 0.86 }}
+        style={{
+          transition: 'fill 0.6s, opacity 0.3s, filter 0.3s',
+          opacity: dim ? 0.22 : mark === 'selected' || mark === 'target' || mark === 'targeted' ? 1 : 0.86,
+          filter: dim ? 'saturate(0.35)' : undefined,
+        }}
       />
       <path d={g.tiles} fill="url(#tileShade)" style={{ pointerEvents: 'none', opacity: dim ? 0.3 : 1 }} />
       <path d={g.outline} fill="rgba(0,0,0,0)" style={{ stroke: 'var(--tile-outline)' }} strokeWidth={1.6} strokeLinejoin="round" />
@@ -90,22 +111,23 @@ function Territory({ id, color, mark }: { id: string; color: string; mark: Mark 
   )
 }
 
-function Badge({ id, armies, color, active }: { id: string; armies: number; color: string; active: boolean }) {
+function Badge({ id, armies, color, seat, active }: { id: string; armies: number; color: string; seat: number; active: boolean }) {
+  const shape = insigniaOf(seat)
   const [x, y] = GEO.territories[id].center
   return (
     <g transform={`translate(${x} ${y})`} style={{ pointerEvents: 'none' }} data-tid={id}>
       <g className="keep-scale">
         <motion.g key={armies} initial={{ scale: 1.6 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 14 }}>
           {active && <circle r={13} fill={color} opacity={0.5} filter="url(#softglow)" />}
-          <circle r={8.6} style={{ fill: 'var(--badge-bg)' }} stroke={color} strokeWidth={2.2} />
-          <circle r={6.6} fill={color} opacity={0.22} />
+          <path d={insigniaPath(shape, 8.6)} style={{ fill: 'var(--badge-bg)' }} stroke={color} strokeWidth={2.2} strokeLinejoin="round" />
+          <path d={insigniaPath(shape, 6.6)} fill={color} opacity={0.22} />
           <text
             y={0.4}
             textAnchor="middle"
             dominantBaseline="middle"
             fontFamily="Orbitron, sans-serif"
             fontWeight={700}
-            fontSize={armies >= 100 ? 5.4 : armies >= 10 ? 7 : 8.2}
+            fontSize={armies >= 100 ? 5.4 : armies >= 10 ? (shape === 'triangle' ? 6.2 : 7) : 8.2}
             style={{ fill: 'var(--badge-fg)' }}
           >
             {armies}
@@ -259,12 +281,49 @@ export function MapBoard({ width, height }: { width: number; height: number }) {
         <Territory key={t.id} id={t.id} color={players[board[t.id].owner]?.color ?? '#555'} mark={marks[t.id]} />
       ))}
 
-      <path d={GEO.continentBorders} fill="none" strokeWidth={1} strokeDasharray="2 2" style={{ pointerEvents: 'none', stroke: 'var(--continent-border)' }} />
+      {/* Continents: coastline, haloed land borders and their name, which fades as territory names appear. */}
+      <g style={{ pointerEvents: 'none' }} fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d={GEO.coast} strokeWidth={1.1} style={{ stroke: 'var(--continent-border)' }} opacity={0.55} />
+        <path d={GEO.continentBorders} strokeWidth={4.4} style={{ stroke: 'var(--label-stroke)' }} opacity={0.5} />
+        <path d={GEO.continentBorders} strokeWidth={2.2} style={{ stroke: 'var(--continent-border)' }} />
+      </g>
+      <g className="continent-label" style={{ pointerEvents: 'none' }}>
+        {CONTINENT_LABELS.map((c) => (
+          <text
+            key={c.id}
+            x={c.x}
+            y={c.y}
+            textAnchor={c.anchor}
+            dominantBaseline="middle"
+            fontFamily="Orbitron, sans-serif"
+            fontWeight={900}
+            fontSize={9}
+            letterSpacing={2}
+            style={{ fill: 'var(--continent-label)', stroke: 'var(--label-stroke)' }}
+            strokeWidth={2.4}
+            strokeOpacity={0.55}
+            paintOrder="stroke"
+          >
+            {contName(c.id, lang).toUpperCase()} +{CONTINENTS[c.id].bonus}
+          </text>
+        ))}
+      </g>
 
       {/* Highlights */}
       <g style={{ pointerEvents: 'none' }}>
         {sourceOutlines.map((t) => (
           <path key={t.id} className="pulse" d={GEO.territories[t.id].outline} fill="none" stroke="#fff" strokeWidth={1.4} strokeOpacity={0.9} />
+        ))}
+        {targetOutlines.map((t) => (
+          <path
+            key={`glow-${t.id}`}
+            className="pulse"
+            d={GEO.territories[t.id].outline}
+            fill="none"
+            stroke={phase === 'attack' ? '#ff4d6d' : '#7dffb2'}
+            strokeWidth={6}
+            filter="url(#softglow)"
+          />
         ))}
         {targetOutlines.map((t) => (
           <path
@@ -356,6 +415,7 @@ export function MapBoard({ width, height }: { width: number; height: number }) {
           id={t.id}
           armies={board[t.id].armies}
           color={players[board[t.id].owner]?.color ?? '#888'}
+          seat={board[t.id].owner}
           active={t.id === selected || t.id === target}
         />
       ))}

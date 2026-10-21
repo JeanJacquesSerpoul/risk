@@ -10,6 +10,7 @@ import { openDialog, useUi } from '../game/ui'
 import { type Lang, LANG_LABEL, LANGS, PLAYER_NAMES } from '../i18n'
 import { langOf, useT } from '../i18n/useT'
 import { reopenRoom } from '../net/session'
+import { InsigniaIcon } from './Insignia'
 import { OnlineDialog } from './Online'
 
 const DIFFS: Difficulty[] = ['easy', 'normal', 'hard']
@@ -192,10 +193,12 @@ export function MenuScreen() {
                 >
                   <button
                     onClick={() => cycleColor(i)}
-                    className="h-9 w-9 shrink-0 rounded-xl transition active:scale-90"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition active:scale-90"
                     style={{ background: p.color, boxShadow: `0 0 16px ${p.color}` }}
                     title={t('menu.changeColor')}
-                  />
+                  >
+                    <InsigniaIcon seat={i} color="rgba(3,16,33,0.55)" size={16} />
+                  </button>
                   <input
                     value={p.name}
                     maxLength={14}

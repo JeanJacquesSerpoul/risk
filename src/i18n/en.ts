@@ -150,6 +150,9 @@ export const en: Record<MessageKey, string> = {
   'abbr.territories': 'T',
   'abbr.armies': 'A',
   'abbr.cards': 'C',
+  'tip.armies': '{n} army|{n} armies',
+  'tip.held': 'held by {name}',
+  'tip.odds': 'Blitz conquest: {p}%',
 
   // settings
   'settings.title': 'Settings',

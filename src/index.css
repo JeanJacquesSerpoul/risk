@@ -47,7 +47,8 @@
   --coast-glow: rgba(34, 211, 238, 0.55);
   --lane: rgba(155, 220, 255, 0.55);
   --tile-outline: rgba(2, 6, 23, 0.85);
-  --continent-border: rgba(224, 242, 254, 0.35);
+  --continent-border: rgba(224, 242, 254, 0.6);
+  --continent-label: rgba(230, 246, 255, 0.55);
   --label-fill: #e6f6ff;
   --label-stroke: #020617;
   --badge-bg: #06101f;
@@ -60,45 +61,47 @@
 }
 
 /* ── Light theme ── */
+/* Paper-grey ocean and an ink accent: no player colour can blend into the map or the UI. */
 :root[data-theme='light'] {
   color-scheme: light;
-  --bg: #e8f0f8;
-  --fg: #0f1e33;
-  --neon: #0369a1;
+  --bg: #ebe9e3;
+  --fg: #16202c;
+  --neon: #155e75;
   --surface: rgba(255, 255, 255, 0.7);
-  --scrim: rgba(15, 30, 51, 0.35);
+  --scrim: rgba(22, 32, 44, 0.35);
   --glow: 0;
-  --glass-1: rgba(255, 255, 255, 0.82);
-  --glass-2: rgba(240, 246, 252, 0.9);
-  --glass-border: rgba(15, 60, 110, 0.16);
-  --glass-shadow: 0 12px 36px rgba(15, 40, 80, 0.18);
+  --glass-1: rgba(255, 255, 255, 0.84);
+  --glass-2: rgba(248, 247, 243, 0.92);
+  --glass-border: rgba(40, 48, 58, 0.14);
+  --glass-shadow: 0 12px 36px rgba(40, 40, 30, 0.16);
   --glass-inset: rgba(255, 255, 255, 0.9);
-  --ghost-bg: rgba(15, 40, 80, 0.05);
-  --ghost-bg-hover: rgba(15, 40, 80, 0.1);
-  --ghost-border: rgba(15, 40, 80, 0.15);
-  --ghost-fg: #1e3a5f;
-  --chip-on-bg: rgba(3, 105, 161, 0.12);
-  --chip-on-border: rgba(3, 105, 161, 0.6);
-  --chip-on-fg: #075985;
+  --ghost-bg: rgba(40, 48, 58, 0.05);
+  --ghost-bg-hover: rgba(40, 48, 58, 0.1);
+  --ghost-border: rgba(40, 48, 58, 0.16);
+  --ghost-fg: #26323f;
+  --chip-on-bg: rgba(21, 94, 117, 0.12);
+  --chip-on-border: rgba(21, 94, 117, 0.6);
+  --chip-on-fg: #134e5e;
   /* map */
-  --ocean-0: #d7ebf8;
-  --ocean-1: #bcdcf1;
-  --ocean-2: #9fc8e6;
-  --map-grid: rgba(3, 105, 161, 0.1);
-  --map-lines: rgba(3, 105, 161, 0.12);
-  --coast-glow: rgba(255, 255, 255, 0.9);
-  --lane: rgba(3, 80, 140, 0.55);
-  --tile-outline: rgba(15, 30, 51, 0.55);
-  --continent-border: rgba(15, 30, 51, 0.45);
-  --label-fill: #0f1e33;
+  --ocean-0: #f3f1ec;
+  --ocean-1: #e6e3dc;
+  --ocean-2: #d4d0c6;
+  --map-grid: rgba(70, 64, 52, 0.07);
+  --map-lines: rgba(70, 64, 52, 0.1);
+  --coast-glow: rgba(255, 255, 255, 0.95);
+  --lane: rgba(70, 64, 52, 0.5);
+  --tile-outline: rgba(22, 32, 44, 0.55);
+  --continent-border: rgba(22, 32, 44, 0.75);
+  --continent-label: rgba(22, 32, 44, 0.62);
+  --label-fill: #16202c;
   --label-stroke: #ffffff;
   --badge-bg: #ffffff;
-  --badge-fg: #0f1e33;
-  --scan: rgba(15, 40, 80, 0.02);
-  --sweep: rgba(3, 105, 161, 0.05);
-  --vignette: rgba(120, 150, 185, 0.35);
-  --menu-veil-0: rgba(232, 240, 248, 0.3);
-  --menu-veil-1: rgba(232, 240, 248, 0.9);
+  --badge-fg: #16202c;
+  --scan: rgba(70, 64, 52, 0.02);
+  --sweep: rgba(70, 64, 52, 0.035);
+  --vignette: rgba(150, 142, 125, 0.35);
+  --menu-veil-0: rgba(235, 233, 227, 0.3);
+  --menu-veil-1: rgba(235, 233, 227, 0.9);
 }
 
 html,
@@ -307,5 +310,9 @@ input[type='range'].slider::-moz-range-thumb {
 
 .map-label {
   opacity: var(--label-opacity, 0);
+  transition: opacity 0.25s;
+}
+.continent-label {
+  opacity: var(--continent-opacity, 1);
   transition: opacity 0.25s;
 }

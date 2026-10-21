@@ -39,7 +39,10 @@ export function MapView() {
     const el = outer.current
     if (!el) return
     el.style.setProperty('--badge-scale', String(clamp(11 / (9 * eff), 0.72, 1.7)))
-    el.style.setProperty('--label-opacity', eff > 1.25 ? '1' : eff > 0.95 ? String((eff - 0.95) / 0.3) : '0')
+    const labels = eff > 1.25 ? 1 : eff > 0.95 ? (eff - 0.95) / 0.3 : 0
+    el.style.setProperty('--label-opacity', String(labels))
+    // Continent names give way to territory names when zooming in.
+    el.style.setProperty('--continent-opacity', String(1 - 0.85 * labels))
   }
 
   useEffect(() => applyScale(initialScale), [fit]) // eslint-disable-line react-hooks/exhaustive-deps

@@ -7,6 +7,7 @@ import { nextTheme } from '../game/theme'
 import { openDialog } from '../game/ui'
 import { useT } from '../i18n/useT'
 import { useNet } from '../net/netStore'
+import { InsigniaIcon } from './Insignia'
 
 export function TopBar({ onMenu }: { onMenu: () => void }) {
   const players = useGame((s) => s.players)
@@ -64,7 +65,7 @@ export function TopBar({ onMenu }: { onMenu: () => void }) {
                     transition={{ type: 'spring', stiffness: 400, damping: 32 }}
                   />
                 )}
-                <div className="relative h-3 w-3 rounded-full" style={{ background: p.color, boxShadow: `0 0 10px ${p.color}` }} />
+                <InsigniaIcon seat={i} color={p.color} size={13} glow />
                 <div className="relative flex flex-col leading-none">
                   <span className={`flex items-center gap-1 text-xs font-bold ${p.alive ? '' : 'line-through'} ${active ? '' : 'hidden md:flex'}`}>
                     {p.name}

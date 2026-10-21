@@ -151,6 +151,9 @@ export const fr = {
   'abbr.territories': 'T',
   'abbr.armies': 'A',
   'abbr.cards': 'C',
+  'tip.armies': '{n} armée|{n} armées',
+  'tip.held': 'tenu par {name}',
+  'tip.odds': 'Conquête en blitz : {p} %',
 
   // settings
   'settings.title': 'Réglages',

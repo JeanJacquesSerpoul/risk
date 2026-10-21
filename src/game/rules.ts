@@ -27,7 +27,10 @@ export interface TerritoryState {
 
 export type Board = Record<string, TerritoryState>
 
-export const PLAYER_COLORS = ['#ff3b5c', '#2fa8ff', '#2ee59d', '#ffc531', '#b57bff', '#ff8a3d']
+// Order matters: the menu hands them out in this order, so the default trio
+// (blue, red, yellow) stays distinct for colour-blind players. Blue is kept away
+// from the cyan accent and the ocean.
+export const PLAYER_COLORS = ['#ff3b5c', '#3d7bff', '#ffc531', '#2ee59d', '#b57bff', '#ff8a3d']
 
 export const START_ARMIES: Record<number, number> = { 2: 40, 3: 35, 4: 30, 5: 25, 6: 20 }
 

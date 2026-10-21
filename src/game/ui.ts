@@ -12,9 +12,11 @@ interface UiState {
   advice: Advice | null
   /** The advisor's window is open. */
   adviceOpen: boolean
+  /** Territory under the mouse pointer, for the tooltip. */
+  hover: string | null
 }
 
-export const useUi = create<UiState>(() => ({ dialog: null, advice: null, adviceOpen: false }))
+export const useUi = create<UiState>(() => ({ dialog: null, advice: null, adviceOpen: false, hover: null }))
 
 export const openDialog = (dialog: Dialog) => useUi.setState({ dialog })
 

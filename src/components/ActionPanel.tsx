@@ -8,6 +8,7 @@ import { useCanAct, useUi } from '../game/ui'
 import { rich, useT } from '../i18n/useT'
 import { useNet } from '../net/netStore'
 import { CardIcon } from './CardsPanel'
+import { InsigniaIcon } from './Insignia'
 
 const STEPS = ['reinforce', 'attack', 'fortify'] as const
 
@@ -261,6 +262,7 @@ export function ActionPanel() {
           <div className="flex items-center gap-1.5 text-xs font-bold" style={{ color: me.color }}>
             {me.ai && <Bot size={13} />}
             {online && !me.ai && seat && (seat.connected ? <Wifi size={13} /> : <WifiOff size={13} className="text-rose-400" />)}
+            <InsigniaIcon seat={me.id} color={me.color} size={11} />
             {me.name}
           </div>
         </div>
