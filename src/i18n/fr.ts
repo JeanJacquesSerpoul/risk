@@ -54,6 +54,7 @@ export const fr = {
   'reinforce.tap': 'Touchez vos territoires',
   'reinforce.auto': 'Répartition automatique',
   'reinforce.max': 'MAX',
+  'reinforce.cards': '{n} carte sur 5 avant l’échange obligatoire|{n} cartes sur 5 avant l’échange obligatoire',
   'attack.choose': 'Choisissez un territoire d’attaque ou une cible',
   'attack.from': 'Depuis {from} — choisissez une cible',
   'attack.diceTitle': 'Attaquer avec {n} dé|Attaquer avec {n} dés',
@@ -61,6 +62,8 @@ export const fr = {
   'attack.blitz': 'Blitz',
   'attack.blitzTitle': 'Attaque éclair jusqu’à la victoire',
   'attack.end': 'Fin',
+  'attack.exhausted': '{from} n’a plus qu’une armée : choisissez un autre territoire d’attaque.',
+  'attack.diceGroup': 'Lancer de dés',
   'attack.odds': '{p} %',
   'attack.oddsTitle': 'Chances de conquérir la cible en blitz',
   'fortify.from': 'Déplacer depuis {from} vers un territoire relié',
@@ -120,6 +123,7 @@ export const fr = {
   // dice
   'dice.vs': 'VS',
   'dice.conquered': 'CONQUIS !',
+  'dice.blitz': 'Blitz · {n} manche|Blitz · {n} manches',
 
   // victory
   'victory.title': 'VICTOIRE',

@@ -53,6 +53,7 @@ export const en: Record<MessageKey, string> = {
   'reinforce.tap': 'Tap your territories',
   'reinforce.auto': 'Automatic placement',
   'reinforce.max': 'MAX',
+  'reinforce.cards': '{n} card out of 5 before a forced trade|{n} cards out of 5 before a forced trade',
   'attack.choose': 'Pick a territory to attack from, or a target',
   'attack.from': 'From {from} — pick a target',
   'attack.diceTitle': 'Attack with {n} die|Attack with {n} dice',
@@ -60,6 +61,8 @@ export const en: Record<MessageKey, string> = {
   'attack.blitz': 'Blitz',
   'attack.blitzTitle': 'Keep attacking until victory',
   'attack.end': 'Done',
+  'attack.exhausted': '{from} has a single army left: choose another territory to attack from.',
+  'attack.diceGroup': 'Dice roll',
   'attack.odds': '{p}%',
   'attack.oddsTitle': 'Chance of capturing the target with a blitz',
   'fortify.from': 'Move from {from} to a connected territory',
@@ -119,6 +122,7 @@ export const en: Record<MessageKey, string> = {
   // dice
   'dice.vs': 'VS',
   'dice.conquered': 'CAPTURED!',
+  'dice.blitz': 'Blitz · {n} round|Blitz · {n} rounds',
 
   // victory
   'victory.title': 'VICTORY',

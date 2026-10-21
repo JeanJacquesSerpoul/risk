@@ -64,6 +64,14 @@ export interface BattleView {
   defender: number
   conquered: boolean
   duration: number
+  /** Running totals of the blitz this roll belongs to, including it once settled. */
+  blitz?: BlitzTally
+}
+
+export interface BlitzTally {
+  rounds: number
+  attLoss: number
+  defLoss: number
 }
 
 export interface PendingMove {
@@ -282,7 +290,7 @@ export const useGame = create<GameState>()(
       }
 
       /** Rolls one battle, animates it and applies the result. Leaves `busy` set. */
-      const runBattle = async (from: string, to: string, dice: number, duration: number) => {
+      const runBattle = async (from: string, to: string, dice: number, duration: number, tally?: BlitzTally) => {
         const gid = get().gameId
         const s = get()
         const attN = Math.min(dice, 3, s.board[from].armies - 1)
@@ -294,7 +302,21 @@ export const useGame = create<GameState>()(
           busy: true,
           selected: from,
           target: to,
-          battle: { key: nextId(), from, to, att, def, attLoss, defLoss, rolling: true, attacker: s.current, defender: s.board[to].owner, conquered: false, duration },
+          battle: {
+            key: nextId(),
+            from,
+            to,
+            att,
+            def,
+            attLoss,
+            defLoss,
+            rolling: true,
+            attacker: s.current,
+            defender: s.board[to].owner,
+            conquered: false,
+            duration,
+            blitz: tally && { ...tally },
+          },
         })
         sfx.dice()
         await sleep(duration)
@@ -312,7 +334,12 @@ export const useGame = create<GameState>()(
         if (defLoss) sfx.hit()
         else sfx.defend()
         const conquered = board[to].armies === 0
-        set({ board, stats, battle: { ...cur.battle!, rolling: false, conquered } })
+        if (tally) {
+          tally.rounds++
+          tally.attLoss += attLoss
+          tally.defLoss += defLoss
+        }
+        set({ board, stats, battle: { ...cur.battle!, rolling: false, conquered, blitz: tally && { ...tally } } })
         if (conquered) doConquest(from, to, attN)
         return conquered
       }
@@ -475,8 +502,9 @@ export const useGame = create<GameState>()(
           const from = s.selected!
           const to = s.target!
           let won = false
+          const tally: BlitzTally = { rounds: 0, attLoss: 0, defLoss: 0 }
           while (!won && get().gameId === gid && get().board[from].armies >= 2 && get().board[to].owner !== get().current) {
-            won = await runBattle(from, to, 3, dur(420))
+            won = await runBattle(from, to, 3, dur(420), tally)
             if (!won) await sleep(dur(120))
           }
           if (get().gameId === gid) set({ busy: false })

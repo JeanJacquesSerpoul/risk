@@ -101,7 +101,7 @@ function Territory({ id, color, mark }: { id: string; color: string; mark: Mark 
         fill={color}
         style={{
           transition: 'fill 0.6s, opacity 0.3s, filter 0.3s',
-          opacity: dim ? 0.22 : mark === 'selected' || mark === 'target' || mark === 'targeted' ? 1 : 0.86,
+          opacity: dim ? 'var(--dim-opacity)' : mark === 'selected' || mark === 'target' || mark === 'targeted' ? 1 : 0.86,
           filter: dim ? 'saturate(0.35)' : undefined,
         }}
       />

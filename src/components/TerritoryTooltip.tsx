@@ -44,8 +44,12 @@ export function TerritoryTooltip() {
       pointer.dragging = e.buttons !== 0
       place()
     }
-    window.addEventListener('pointermove', onMove)
-    return () => window.removeEventListener('pointermove', onMove)
+    // `pointerover` also fires when the pointer enters a territory, before any move.
+    const events = ['pointermove', 'pointerover', 'pointerdown'] as const
+    for (const ev of events) window.addEventListener(ev, onMove)
+    return () => {
+      for (const ev of events) window.removeEventListener(ev, onMove)
+    }
   }, [])
 
   useLayoutEffect(place)

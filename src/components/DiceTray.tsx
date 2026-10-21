@@ -146,6 +146,17 @@ export function DiceTray() {
                   <span style={{ color: battle.defLoss ? '#ff5d73' : '#64748b' }}>-{battle.defLoss}</span>
                 </motion.div>
               )}
+              {/* Blitz: totals since the first round, so the whole fight can be read at a glance. */}
+              {battle.blitz && battle.blitz.rounds > 0 && (
+                <div className="mt-1 flex flex-col items-center whitespace-nowrap rounded-md bg-fg/5 px-1.5 py-0.5 font-display text-[9px] font-bold sm:text-[10px]">
+                  <span className="text-fg/60">{t('dice.blitz', { n: battle.blitz.rounds })}</span>
+                  <span className="flex gap-1.5">
+                    <span style={{ color: att.color }}>-{battle.blitz.attLoss}</span>
+                    <span className="text-fg/30">/</span>
+                    <span style={{ color: def.color }}>-{battle.blitz.defLoss}</span>
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex flex-col items-center gap-1.5">
               <div className="max-w-[110px] truncate text-[11px] font-bold uppercase tracking-wide sm:max-w-none sm:text-xs" style={{ color: def.color }}>

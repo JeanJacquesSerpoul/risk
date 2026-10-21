@@ -47,6 +47,8 @@
   --coast-glow: rgba(34, 211, 238, 0.55);
   --lane: rgba(155, 220, 255, 0.55);
   --tile-outline: rgba(2, 6, 23, 0.85);
+  /* territories out of reach while choosing a target */
+  --dim-opacity: 0.4;
   --continent-border: rgba(224, 242, 254, 0.6);
   --continent-label: rgba(230, 246, 255, 0.55);
   --label-fill: #e6f6ff;
@@ -91,6 +93,7 @@
   --coast-glow: rgba(255, 255, 255, 0.95);
   --lane: rgba(70, 64, 52, 0.5);
   --tile-outline: rgba(22, 32, 44, 0.55);
+  --dim-opacity: 0.22;
   --continent-border: rgba(22, 32, 44, 0.75);
   --continent-label: rgba(22, 32, 44, 0.62);
   --label-fill: #16202c;

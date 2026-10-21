@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowRight, Bot, Crosshair, Flag, Lightbulb, Shuffle, Swords, Wifi, WifiOff, Zap } from 'lucide-react'
+import { ArrowRight, Bot, Crosshair, Dices, Flag, GalleryVerticalEnd, Lightbulb, Shuffle, Swords, Wifi, WifiOff, Zap } from 'lucide-react'
 import { advise } from '../game/advisor'
 import { conquestOdds, pct } from '../game/odds'
 import { findSet } from '../game/rules'
@@ -7,7 +7,6 @@ import { useGame } from '../game/store'
 import { useCanAct, useUi } from '../game/ui'
 import { rich, useT } from '../i18n/useT'
 import { useNet } from '../net/netStore'
-import { CardIcon } from './CardsPanel'
 import { InsigniaIcon } from './Insignia'
 
 const STEPS = ['reinforce', 'attack', 'fortify'] as const
@@ -29,7 +28,7 @@ function PhaseStepper() {
         <div key={s} className="flex items-center gap-1">
           <div
             className="relative rounded-md px-2 py-0.5 font-display text-[9px] font-bold tracking-widest sm:text-[10px]"
-            style={{ color: i === idx ? '#031021' : i < idx ? '#94a3b8' : '#475569' }}
+            style={{ color: i === idx ? '#031021' : `color-mix(in srgb, var(--fg) ${i < idx ? 55 : 35}%, transparent)` }}
           >
             {i === idx && <motion.div layoutId="phase-pill" className="absolute inset-0 rounded-md" style={{ background: color, boxShadow: `0 0 14px ${color}` }} />}
             <span className="relative">{t(`phase.${s}`).toUpperCase()}</span>
@@ -103,9 +102,17 @@ function ReinforceControls() {
           <Shuffle size={14} />
         </button>
         {phase === 'reinforce' && (
-          <button className={`btn ${hasSet ? 'btn-primary' : 'btn-ghost'} !px-2.5`} onClick={() => setCardsOpen(true)}>
-            <CardIcon kind="infantry" size={14} />
-            {me.cards.length}
+          <button
+            className={`btn ${hasSet ? 'btn-primary' : 'btn-ghost'} !px-2.5`}
+            onClick={() => setCardsOpen(true)}
+            title={t('reinforce.cards', { n: me.cards.length })}
+            aria-label={t('reinforce.cards', { n: me.cards.length })}
+          >
+            <GalleryVerticalEnd size={14} />
+            <span>
+              {me.cards.length}
+              <span className="opacity-50">/5</span>
+            </span>
             {hasSet && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-ping rounded-full bg-yellow-300" />}
           </button>
         )}
@@ -127,7 +134,9 @@ function AttackControls() {
   const showOdds = useGame((s) => s.settings.advisor !== false)
   const { t, terr } = useT()
   const maxDice = selected ? Math.min(3, board[selected].armies - 1) : 0
-  const odds = selected && target ? conquestOdds(board[selected].armies, board[target].armies) : null
+  // After a lost fight the attacker may be left with a single army: say so instead of greyed-out buttons.
+  const exhausted = !!selected && !busy && maxDice < 1
+  const odds = selected && target && !exhausted ? conquestOdds(board[selected].armies, board[target].armies) : null
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -137,8 +146,9 @@ function AttackControls() {
             <Crosshair size={16} style={{ color: me.color }} /> {t('attack.choose')}
           </span>
         )}
-        {selected && !target && <span className="text-fg/80">{rich(t('attack.from'), { from: <b style={{ color: me.color }}>{terr(selected)}</b> })}</span>}
-        {selected && target && (
+        {exhausted && <span className="text-fg/80">{rich(t('attack.exhausted'), { from: <b style={{ color: me.color }}>{terr(selected)}</b> })}</span>}
+        {selected && !target && !exhausted && <span className="text-fg/80">{rich(t('attack.from'), { from: <b style={{ color: me.color }}>{terr(selected)}</b> })}</span>}
+        {selected && target && !exhausted && (
           <div className="flex items-center gap-2 truncate font-bold">
             <span style={{ color: me.color }}>{terr(selected)}</span>
             <span className="text-fg/50">({board[selected].armies})</span>
@@ -162,15 +172,31 @@ function AttackControls() {
         )}
       </div>
       <div className="flex items-center gap-1.5">
-        {selected && target && (
+        {selected && target && !exhausted && (
           <>
-            {[1, 2, 3].map((n) => (
-              <button key={n} disabled={busy || n > maxDice} className="btn btn-danger !px-3" onClick={() => attack(n)} title={t('attack.diceTitle', { n })}>
-                {n}
-                <span className="hidden sm:inline">{t('attack.dice', { n })}</span>
-              </button>
-            ))}
-            <button disabled={busy || maxDice < 1} className="btn btn-danger !px-3" onClick={() => blitz()} title={t('attack.blitzTitle')}>
+            {/* One roll with 1-3 dice: a segmented group, secondary to the blitz. */}
+            <div
+              className="flex items-stretch overflow-hidden rounded-xl border border-rose-500/50 max-sm:[&>button:nth-child(2)]:border-l-0"
+              role="group"
+              aria-label={t('attack.diceGroup')}
+            >
+              <span className="hidden items-center px-2 text-rose-500 sm:flex" title={t('attack.diceGroup')}>
+                <Dices size={15} />
+              </span>
+              {[1, 2, 3].map((n) => (
+                <button
+                  key={n}
+                  disabled={busy || n > maxDice}
+                  className="border-l border-rose-500/30 px-3 py-2 font-display text-xs font-bold text-rose-500 transition hover:bg-rose-500/15 active:scale-95 disabled:opacity-30"
+                  onClick={() => attack(n)}
+                  title={t('attack.diceTitle', { n })}
+                  aria-label={t('attack.diceTitle', { n })}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            <button disabled={busy} className="btn btn-danger !px-4" onClick={() => blitz()} title={t('attack.blitzTitle')}>
               <Zap size={14} /> {t('attack.blitz')}
             </button>
           </>
