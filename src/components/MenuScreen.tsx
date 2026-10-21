@@ -7,7 +7,7 @@ import { type Difficulty, PLAYER_COLORS } from '../game/rules'
 import { type PlayerConfig, useGame } from '../game/store'
 import { useResolvedTheme } from '../game/theme'
 import { openDialog, useUi } from '../game/ui'
-import { type Lang, LANG_LABEL, LANGS, PLAYER_NAMES } from '../i18n'
+import { type Lang, PLAYER_NAMES } from '../i18n'
 import { langOf, useT } from '../i18n/useT'
 import { reopenRoom } from '../net/session'
 import { InsigniaIcon } from './Insignia'
@@ -120,8 +120,6 @@ export function MenuScreen() {
   const resume = useGame((s) => s.resume)
   const hasSave = useGame((s) => s.players.length > 0 && s.winner === null)
   const savedRoom = useGame((s) => s.room?.code)
-  const theme = useGame((s) => s.settings.theme ?? 'system')
-  const updateSettings = useGame((s) => s.updateSettings)
   const dialog = useUi((s) => s.dialog)
   const { t, lang } = useT()
   const [manual, setManual] = useState(false)
@@ -171,10 +169,16 @@ export function MenuScreen() {
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-display text-xs font-bold tracking-[0.3em] text-fg/70">{t('menu.generals', { n: players.length })}</h2>
             <div className="flex gap-1">
-              <button className="btn btn-ghost !p-2" disabled={players.length <= 2} onClick={() => setPlayers(players.slice(0, -1))}>
+              <button
+                className="btn btn-ghost !p-2"
+                disabled={players.length <= 2}
+                onClick={() => setPlayers(players.slice(0, -1))}
+                title={t('menu.removePlayer')}
+                aria-label={t('menu.removePlayer')}
+              >
                 <Minus size={14} />
               </button>
-              <button className="btn btn-ghost !p-2" disabled={players.length >= 6} onClick={add}>
+              <button className="btn btn-ghost !p-2" disabled={players.length >= 6} onClick={add} title={t('menu.addPlayer')} aria-label={t('menu.addPlayer')}>
                 <Plus size={14} />
               </button>
             </div>
@@ -196,6 +200,7 @@ export function MenuScreen() {
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition active:scale-90"
                     style={{ background: p.color, boxShadow: `0 0 16px ${p.color}` }}
                     title={t('menu.changeColor')}
+                    aria-label={t('menu.changeColor')}
                   >
                     <InsigniaIcon seat={i} color="rgba(3,16,33,0.55)" size={16} />
                   </button>
@@ -210,7 +215,12 @@ export function MenuScreen() {
                     <span className="hidden sm:inline">{p.ai ? t('menu.ai') : t('menu.human')}</span>
                   </button>
                   {p.ai && (
-                    <button className="chip w-[74px]" onClick={() => patch(i, { difficulty: DIFFS[(DIFFS.indexOf(p.difficulty) + 1) % 3] })}>
+                    <button
+                      className="chip flex w-[78px] flex-col items-center !py-0.5 leading-tight"
+                      onClick={() => patch(i, { difficulty: DIFFS[(DIFFS.indexOf(p.difficulty) + 1) % 3] })}
+                      title={t('menu.levelTitle')}
+                    >
+                      <span className="text-[8px] font-semibold tracking-widest opacity-60">{t('menu.level').toUpperCase()}</span>
                       {t(`diff.${p.difficulty}`)}
                     </button>
                   )}
@@ -227,26 +237,6 @@ export function MenuScreen() {
               <button className="chip" data-on={manual} onClick={() => setManual(true)}>
                 {t('menu.deployManual')}
               </button>
-            </div>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="text-fg/60">{t('settings.theme')}</span>
-            <div className="flex gap-1">
-              {(['system', 'light', 'dark'] as const).map((m) => (
-                <button key={m} className="chip" data-on={theme === m} onClick={() => updateSettings({ theme: m })}>
-                  {t(`theme.${m}`).toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-            <span className="text-fg/60">{t('settings.language')}</span>
-            <div className="flex gap-1">
-              {LANGS.map((l) => (
-                <button key={l} className="chip" data-on={lang === l} onClick={() => updateSettings({ lang: l })}>
-                  {LANG_LABEL[l].toUpperCase()}
-                </button>
-              ))}
             </div>
           </div>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">

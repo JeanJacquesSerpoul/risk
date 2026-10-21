@@ -1,12 +1,13 @@
 import confetti from 'canvas-confetti'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowRight, Crown, Home, RotateCcw, Trophy } from 'lucide-react'
+import { ArrowRight, Crown, Home, RotateCcw, ScrollText, Trophy, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useCanAct } from '../game/ui'
 import { useGame } from '../game/store'
 import { useT } from '../i18n/useT'
 import { useNet } from '../net/netStore'
 import { leaveRoom } from '../net/session'
+import { InsigniaIcon } from './Insignia'
 import { QuickSettings } from './TopBar'
 
 export function MoveDialog() {
@@ -153,26 +154,93 @@ export function TurnBanner() {
 
 export function LogTicker() {
   const log = useGame((s) => s.log)
-  const { m } = useT()
+  const [open, setOpen] = useState(false)
+  const { t, m } = useT()
   const items = log.slice(-4)
   return (
-    <div className="pointer-events-none absolute left-2 top-[4.2rem] z-10 flex max-w-[70vw] flex-col gap-1 sm:left-3 sm:top-[4.6rem] sm:max-w-sm">
-      <AnimatePresence initial={false}>
-        {items.map((e, i) => (
-          <motion.div
-            key={e.id}
-            layout
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 0.35 + (i / items.length) * 0.65, x: 0 }}
-            exit={{ opacity: 0, height: 0 }}
-            className={`truncate rounded-lg bg-surface px-2 py-0.5 text-[11px] font-semibold backdrop-blur-sm sm:text-xs ${i < items.length - 2 ? 'hidden sm:block' : ''}`}
-            style={{ borderLeft: `3px solid ${e.color ?? '#22d3ee'}` }}
+    <div className="absolute left-2 top-[4.2rem] z-10 flex max-w-[70vw] flex-col items-start gap-1 sm:left-3 sm:top-[4.6rem] sm:max-w-sm">
+      <AnimatePresence initial={false} mode="popLayout">
+        {open ? (
+          <Journal key="journal" onClose={() => setOpen(false)} />
+        ) : (
+          <motion.button
+            key="ticker"
+            className="flex flex-col items-start gap-1 text-left"
+            onClick={() => setOpen(true)}
+            title={t('journal.open')}
+            aria-label={t('journal.open')}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            {m(e.msg)}
-          </motion.div>
-        ))}
+            <AnimatePresence initial={false}>
+              {items.map((e, i) => (
+                <motion.div
+                  key={e.id}
+                  layout
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 0.35 + (i / items.length) * 0.65, x: 0 }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className={`max-w-full truncate rounded-lg bg-surface px-2 py-0.5 text-[11px] font-semibold backdrop-blur-sm sm:text-xs ${i < items.length - 2 ? 'hidden sm:block' : ''}`}
+                  style={{ borderLeft: `3px solid ${e.color ?? '#22d3ee'}` }}
+                >
+                  {m(e.msg)}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <span className="flex items-center gap-1 rounded-md px-1.5 py-0.5 font-display text-[9px] font-bold tracking-widest text-fg/50 hover:bg-surface hover:text-fg/80">
+              <ScrollText size={11} /> {t('journal.title').toUpperCase()}
+            </span>
+          </motion.button>
+        )}
       </AnimatePresence>
     </div>
+  )
+}
+
+/** The whole log (last 60 events), newest first, filterable by player. */
+function Journal({ onClose }: { onClose: () => void }) {
+  const log = useGame((s) => s.log)
+  const players = useGame((s) => s.players)
+  const [only, setOnly] = useState<number | null>(null)
+  const { t, m } = useT()
+  // Log entries carry their player's colour, which is unique to that player.
+  const shown = log.filter((e) => only === null || e.color === players[only]?.color).reverse()
+  return (
+    <motion.div
+      className="glass pointer-events-auto flex max-h-[min(24rem,55dvh)] w-[min(22rem,calc(100vw-1rem))] flex-col rounded-2xl"
+      initial={{ opacity: 0, y: -8, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -8, scale: 0.97 }}
+      transition={{ duration: 0.18 }}
+    >
+      <div className="flex items-center gap-2 px-3 pb-2 pt-2.5">
+        <ScrollText size={14} className="text-neon" />
+        <h2 className="flex-1 font-display text-[11px] font-bold tracking-[0.25em]">{t('journal.title').toUpperCase()}</h2>
+        <button className="btn btn-ghost !p-1.5" onClick={onClose} title={t('common.close')} aria-label={t('common.close')}>
+          <X size={14} />
+        </button>
+      </div>
+      <div className="no-scrollbar flex gap-1 overflow-x-auto px-3 pb-2" role="group" aria-label={t('journal.filter')}>
+        <button className="chip shrink-0" data-on={only === null} onClick={() => setOnly(null)}>
+          {t('journal.all')}
+        </button>
+        {players.map((p, i) => (
+          <button key={p.id} className="chip flex shrink-0 items-center gap-1" data-on={only === i} onClick={() => setOnly(only === i ? null : i)} title={p.name}>
+            <InsigniaIcon seat={i} color={p.color} size={10} />
+            <span className="max-w-[5.5rem] truncate">{p.name}</span>
+          </button>
+        ))}
+      </div>
+      <ol className="no-scrollbar flex-1 space-y-1 overflow-y-auto px-3 pb-3 text-xs font-semibold">
+        {shown.length === 0 && <li className="py-2 text-fg/50">{t('journal.empty')}</li>}
+        {shown.map((e) => (
+          <li key={e.id} className="rounded-md bg-surface px-2 py-1" style={{ borderLeft: `3px solid ${e.color ?? 'var(--neon)'}` }}>
+            {m(e.msg)}
+          </li>
+        ))}
+      </ol>
+    </motion.div>
   )
 }
 

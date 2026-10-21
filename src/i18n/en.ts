@@ -32,6 +32,10 @@ export const en: Record<MessageKey, string> = {
   'menu.online': 'Online',
   'menu.player': 'Player {n}',
   'menu.you': 'You',
+  'menu.level': 'Level',
+  'menu.levelTitle': 'Computer level: click to change',
+  'menu.addPlayer': 'Add a player',
+  'menu.removePlayer': 'Remove the last player',
 
   'diff.easy': 'Recruit',
   'diff.normal': 'General',
@@ -114,10 +118,19 @@ export const en: Record<MessageKey, string> = {
   'log.trade': '{name} trades cards: +{n} armies',
   'log.tradeBonus': '{name} trades cards: +{n} armies (+2 bonus)',
   'log.toAi': '{name} is now played by the computer',
+  'log.turn.you': 'Turn {turn} — you receive {n} reinforcements',
+  'log.conquer.you': 'You capture {terr}',
+  'log.eliminated.you': '☠ You have been eliminated!',
+  'log.fortify.you': 'You move {n} army to {terr}|You move {n} armies to {terr}',
+  'log.trade.you': 'You trade cards: +{n} armies',
+  'log.tradeBonus.you': 'You trade cards: +{n} armies (+2 bonus)',
+  'log.toAi.you': 'You are now played by the computer',
   'banner.turn': 'Turn {turn} · +{n} reinforcements',
   'banner.deploy': 'Deployment · {n} armies',
   'banner.eliminated': '{name} eliminated',
   'banner.by': 'by {name}',
+  'banner.eliminated.you': 'You have been eliminated',
+  'banner.by.you': 'by you',
 
   // dice
   'dice.vs': 'VS',
@@ -135,6 +148,11 @@ export const en: Record<MessageKey, string> = {
 
   // pause
   'pause.title': 'PAUSE',
+  'journal.title': 'Log',
+  'journal.open': 'Open the game log',
+  'journal.all': 'All',
+  'journal.filter': 'Filter by player',
+  'journal.empty': 'Nothing yet for this player.',
   'pause.saved': 'The game is saved automatically.',
   'pause.online': 'Online game: keep this page open for your guests.',
   'pause.guest': 'Online game hosted by another player.',
@@ -156,6 +174,7 @@ export const en: Record<MessageKey, string> = {
   'top.share': '{name}: {p}% of the world',
   'tip.armies': '{n} army|{n} armies',
   'tip.held': 'held by {name}',
+  'tip.held.you': 'held by you',
   'tip.odds': 'Blitz conquest: {p}%',
 
   // settings
@@ -173,6 +192,7 @@ export const en: Record<MessageKey, string> = {
 
   // hot-seat
   'pass.title': 'Next up: {name}',
+  'pass.title.you': 'Your turn',
   'pass.hint': 'Pass the device, then tap the screen to start your turn.',
   'pass.go': 'I’m ready',
 

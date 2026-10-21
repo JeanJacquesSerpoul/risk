@@ -33,6 +33,10 @@ export const fr = {
   'menu.online': 'En ligne',
   'menu.player': 'Joueur {n}',
   'menu.you': 'Vous',
+  'menu.level': 'Niveau',
+  'menu.levelTitle': 'Niveau de l’ordinateur : cliquez pour changer',
+  'menu.addPlayer': 'Ajouter un joueur',
+  'menu.removePlayer': 'Retirer le dernier joueur',
 
   'diff.easy': 'Recrue',
   'diff.normal': 'Général',
@@ -115,10 +119,20 @@ export const fr = {
   'log.trade': '{name} échange des cartes : +{n} armées',
   'log.tradeBonus': '{name} échange des cartes : +{n} armées (+2 bonus)',
   'log.toAi': '{name} est désormais joué par l’ordinateur',
+  // Second-person forms, used when the player is called « Vous » (see `translate`).
+  'log.turn.you': 'Tour {turn} — vous recevez {n} renforts',
+  'log.conquer.you': 'Vous conquérez {terr}',
+  'log.eliminated.you': '☠ Vous êtes éliminé !',
+  'log.fortify.you': 'Vous déplacez {n} armée vers {terr}|Vous déplacez {n} armées vers {terr}',
+  'log.trade.you': 'Vous échangez des cartes : +{n} armées',
+  'log.tradeBonus.you': 'Vous échangez des cartes : +{n} armées (+2 bonus)',
+  'log.toAi.you': 'Vous êtes désormais joué par l’ordinateur',
   'banner.turn': 'Tour {turn} · +{n} renforts',
   'banner.deploy': 'Déploiement · {n} armées',
   'banner.eliminated': '{name} éliminé',
   'banner.by': 'par {name}',
+  'banner.eliminated.you': 'Vous êtes éliminé',
+  'banner.by.you': 'par vous',
 
   // dice
   'dice.vs': 'VS',
@@ -136,6 +150,11 @@ export const fr = {
 
   // pause
   'pause.title': 'PAUSE',
+  'journal.title': 'Journal',
+  'journal.open': 'Ouvrir le journal de la partie',
+  'journal.all': 'Tous',
+  'journal.filter': 'Filtrer par joueur',
+  'journal.empty': 'Aucun événement pour ce joueur.',
   'pause.saved': 'La partie est sauvegardée automatiquement.',
   'pause.online': 'Partie en ligne : gardez cette page ouverte pour vos invités.',
   'pause.guest': 'Partie en ligne hébergée par un autre joueur.',
@@ -157,6 +176,7 @@ export const fr = {
   'top.share': '{name} : {p} % du monde',
   'tip.armies': '{n} armée|{n} armées',
   'tip.held': 'tenu par {name}',
+  'tip.held.you': 'tenu par vous',
   'tip.odds': 'Conquête en blitz : {p} %',
 
   // settings
@@ -174,6 +194,7 @@ export const fr = {
 
   // hot-seat
   'pass.title': 'Au tour de {name}',
+  'pass.title.you': 'À vous de jouer',
   'pass.hint': 'Passez l’appareil, puis touchez l’écran pour commencer votre tour.',
   'pass.go': 'Je suis prêt',
 

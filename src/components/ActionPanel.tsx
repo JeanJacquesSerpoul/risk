@@ -51,6 +51,7 @@ function AdvisorButton() {
       className="btn btn-ghost !px-2.5"
       disabled={pending}
       title={t('advisor.title')}
+      aria-label={t('advisor.title')}
       onClick={() => {
         const s = useGame.getState()
         useUi.setState({ advice: advise(s), adviceOpen: true })
@@ -98,7 +99,7 @@ function ReinforceControls() {
             {n === 99 ? t('reinforce.max') : `+${n}`}
           </button>
         ))}
-        <button className="btn btn-ghost !px-2.5" onClick={autoPlace} title={t('reinforce.auto')}>
+        <button className="btn btn-ghost !px-2.5" onClick={autoPlace} title={t('reinforce.auto')} aria-label={t('reinforce.auto')}>
           <Shuffle size={14} />
         </button>
         {phase === 'reinforce' && (

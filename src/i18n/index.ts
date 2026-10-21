@@ -15,7 +15,13 @@ export type Params = Record<string, string | number>
 
 const DICTS: Record<Lang, Record<MessageKey, string>> = { fr, en }
 
+/** Names that mean the person holding the device: « Vous » / « You », the default human name. */
+const YOU = new Set([fr['menu.you'], en['menu.you']].map((n) => n.toLowerCase()))
+
 export function translate(lang: Lang, key: MessageKey, params?: Params): string {
+  // « Vous reçoit » → « vous recevez »: messages about a player called « Vous » have a second-person form.
+  const you = `${key}.you` as MessageKey
+  if (typeof params?.name === 'string' && YOU.has(params.name.trim().toLowerCase()) && DICTS[lang][you]) key = you
   let s: string = DICTS[lang][key] ?? fr[key] ?? key
   if (s.includes('|') && typeof params?.n === 'number') {
     const [one, other] = s.split('|')

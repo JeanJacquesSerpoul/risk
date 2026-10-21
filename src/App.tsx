@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useEffect } from 'react'
 import { GameScreen } from './components/GameScreen'
 import { introSeen, IntroVideo } from './components/IntroVideo'
@@ -35,18 +35,20 @@ export default function App() {
 
   const view = lobby ? 'lobby' : screen
   return (
-    <>
-      <AnimatePresence mode="wait">
+    // reducedMotion="user": transforms and layout animations are skipped when the OS asks for less motion.
+    <MotionConfig reducedMotion="user">
+      {/* No "wait" mode: the menu and the game cross-fade instead of passing through an empty screen. */}
+      <AnimatePresence>
         {view === 'lobby' ? (
           <motion.div key="lobby" className="fixed inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <Lobby />
           </motion.div>
         ) : view === 'menu' ? (
-          <motion.div key="menu" className="fixed inset-0" exit={{ opacity: 0, scale: 1.08, filter: 'blur(8px)' }} transition={{ duration: 0.5 }}>
+          <motion.div key="menu" className="fixed inset-0 z-10" exit={{ opacity: 0, scale: 1.08, filter: 'blur(8px)' }} transition={{ duration: 0.5 }}>
             <MenuScreen />
           </motion.div>
         ) : (
-          <motion.div key="game" className="fixed inset-0" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }}>
+          <motion.div key="game" className="fixed inset-0" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
             <GameScreen />
           </motion.div>
         )}
@@ -55,6 +57,6 @@ export default function App() {
         {dialog === 'settings' && <SettingsDialog key="settings" />}
         {dialog === 'intro' && <IntroVideo key="intro" />}
       </AnimatePresence>
-    </>
+    </MotionConfig>
   )
 }

@@ -29,6 +29,13 @@ describe('dictionaries', () => {
 })
 
 describe('translate', () => {
+  it('speaks to a player called « Vous » / « You » in the second person', () => {
+    expect(translate('fr', 'log.turn', { turn: 1, name: 'Vous', n: 4 })).toBe('Tour 1 — vous recevez 4 renforts')
+    expect(translate('en', 'log.conquer', { name: 'You', terr: 'Peru' })).toBe('You capture Peru')
+    expect(translate('fr', 'log.conquer', { name: 'you', terr: 'Pérou' })).toBe('Vous conquérez Pérou')
+    expect(translate('fr', 'log.conquer', { name: 'Napoléon', terr: 'Pérou' })).toBe('Napoléon conquiert Pérou')
+  })
+
   it('fills parameters and picks the plural form', () => {
     expect(translate('fr', 'move.advance', { n: 1 })).toBe('Avancer 1 armée')
     expect(translate('fr', 'move.advance', { n: 3 })).toBe('Avancer 3 armées')

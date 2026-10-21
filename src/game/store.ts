@@ -692,6 +692,8 @@ export const useGame = create<GameState>()(
       // Saves made by older versions: new settings get their defaults, old log lines are dropped.
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<GameData>
+        // Ids restart at 1 on each page load: continue after the saved log so React keys stay unique.
+        for (const e of p.log ?? []) if (e && typeof e.id === 'number') uid = Math.max(uid, e.id + 1)
         return {
           ...current,
           ...p,
